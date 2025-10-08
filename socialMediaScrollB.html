@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Infinite TikTok Mockup - 30 Posts</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    height: 100%;
+    overflow: hidden;
+    font-family: system-ui, sans-serif;
+    background: #000;
+    color: #fff;
+  }
+
+  .feed {
+    height: 100vh;
+    width: 100vw;
+    overflow-y: scroll;
+    scroll-snap-type: y mandatory;
+  }
+
+  .post {
+    position: relative;
+    height: 100vh;
+    width: 100%;
+    scroll-snap-align: start;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: #000;
+    animation: fadeIn 0.8s ease;
+  }
+
+  .post video,
+  .post img {
+    height: 100%;
+    width: 100%;
+    object-fit: cover;
+    filter: brightness(0.85);
+    transition: transform 0.4s ease, filter 0.4s ease;
+  }
+
+  .post:hover video,
+  .post:hover img {
+    transform: scale(1.02);
+    filter: brightness(1);
+  }
+
+  .overlay {
+    position: absolute;
+    bottom: 80px;
+    left: 20px;
+    width: calc(100% - 40px);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .username { font-weight: bold; font-size: 1.1rem; }
+  .caption { font-size: 0.9rem; color: #ddd; }
+
+  .actions {
+    position: absolute;
+    right: 20px;
+    bottom: 120px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .actions span {
+    font-size: 1.8rem;
+    cursor: pointer;
+    transition: transform 0.3s;
+  }
+
+  .actions span:hover { transform: scale(1.2); }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: scale(1.05); }
+    to { opacity: 1; transform: scale(1); }
+  }
+</style>
+</head>
+<body>
+
+<div class="feed" id="feed"></div>
+
+<script>
+const feed = document.getElementById('feed');
+
+// Array of 30 unique posts
+const postsData = [
+  { type: 'gif', src: 'https://media.giphy.com/media/ICOgUNjpvO0PC/giphy.gif', user: '@dancingcat', caption: 'When the beat drops 😸🎶' },
+  { type: 'image', src: 'https://picsum.photos/1080/1920?random=1', user: '@wanderlust', caption: 'Morning hike through the misty woods 🌲' },
+  { type: 'video', src: 'https://samplelib.com/lib/preview/mp4/sample-5s.mp4', user: '@videovibes', caption: 'Sunset waves 🌅🌊' },
+  { type: 'gif', src: 'https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif', user: '@doglife', caption: 'Just vibing 🐶🎧' },
+  { type: 'image', src: 'https://picsum.photos/1080/1920?random=2', user: '@naturelover', caption: 'Golden hour hits different ✨' },
+  { type: 'image', src: 'https://picsum.photos/1080/1920?random=3', user: '@cityscape', caption: 'City lights ✨🏙️' },
+  { type: 'gif', src: 'https://media.giphy.com/media/3oEjI6SIIHBdRxXI40/giphy.gif', user: '@funnycat', caption: 'Can’t stop laughing 😹' },
+  { type: 'image', src: 'https://picsum.photos/1080/1920?random=4', user: '@mountainlover', caption: 'Snowy peaks ❄️🏔️' },
+  { type: 'video', src: 'https://samplelib.com/lib/preview/mp4/sample-5s.mp4', user: '@oceanview', caption: 'Waves crashing 🌊' },
+  { type: 'gif', src: 'https://media.giphy.com/media/xUPGcguWZHRC2HyBRS/giphy.gif', user: '@partytime', caption: 'Dance floor vibes 💃🕺' },
+  { type: 'image', src: 'https://picsum.photos/1080/1920?random=5', user: '@streetart', caption: 'Colorful graffiti 🎨' },
+  { type: 'video', src: 'https://samplelib.com/lib/preview/mp4/sample-5s.mp4', user: '@sunsetlover', caption: 'Golden sunset 🌅' },
+  { type: 'image', src: 'https://picsum.photos/1080/1920?random=6', user: '@forestwalker', caption: 'Misty morning 🌫️' },
+  { type: 'gif', src: 'https://media.giphy.com/media/3oriO0OEd9QIDdllqo/giphy.gif', user: '@laughingdog', caption: 'Hilarious pup 😂' },
+  { type: 'image', src: 'https://picsum.photos/1080/1920?random=7', user: '@flowers', caption: 'Blooming flowers 🌸' },
+  { type: 'video', src: 'https://samplelib.com/lib/preview/mp4/sample-5s.mp4', user: '@riverlife', caption: 'Flowing river 🏞️' },
+  { type: 'gif', src: 'https://media.giphy.com/media/3oKIPwoeGErMmaI43C/giphy.gif', user: '@funnyfish', caption: 'Silly fish 🐟😂' },
+  { type: 'image', src: 'https://picsum.photos/1080/1920?random=8', user: '@desert', caption: 'Sandy dunes 🏜️' },
+  { type: 'video', src: 'https://samplelib.com/lib/preview/mp4/sample-5s.mp4', user: '@skylover', caption: 'Cloudy skies ☁️' },
+  { type: 'gif', src: 'https://media.giphy.com/media/26ufdipQqU2lhNA4g/giphy.gif', user: '@catnap', caption: 'Sleepy cat 😴' },
+  { type: 'image', src: 'https://picsum.photos/1080/1920?random=9', user: '@lakeside', caption: 'Peaceful lake 🏞️' },
+  { type: 'gif', src: 'https://media.giphy.com/media/5xaOcLGvzHxDKjufnLW/giphy.gif', user: '@funnybunny', caption: 'Bunny hopping 🐇' },
+  { type: 'video', src: 'https://samplelib.com/lib/preview/mp4/sample-5s.mp4', user: '@nightcity', caption: 'City at night 🌃' },
+  { type: 'image', src: 'https://picsum.photos/1080/1920?random=10', user: '@sunrise', caption: 'Morning sunrise 🌅' },
+  { type: 'gif', src: 'https://media.giphy.com/media/l0HlOvJ7yaacpuSas/giphy.gif', user: '@dancingdog', caption: 'Dog dancing 💃🐶' },
+  { type: 'image', src: 'https://picsum.photos/1080/1920?random=12', user: '@rainforest', caption: 'Tropical vibes 🌴' },
+  { type: 'video', src: 'https://samplelib.com/lib/preview/mp4/sample-5s.mp4', user: '@waterfall', caption: 'Waterfall cascade 🌊' },
+  { type: 'gif', src: 'https://media.giphy.com/media/3o6ZsYd6pH3qR0q0cg/giphy.gif', user: '@surprisedcat', caption: 'Shocked cat 😮' },
+  { type: 'image', src: 'https://picsum.photos/1080/1920?random=13', user: '@cliffside', caption: 'Edge of the cliff 🧗‍♂️' },
+  { type: 'gif', src: 'https://media.giphy.com/media/l4FGuhL4U2WyjdkaY/giphy.gif', user: '@partycat', caption: 'Party time 🎉' },
+  { type: 'video', src: 'https://samplelib.com/lib/preview/mp4/sample-5s.mp4', user: '@frozenlake', caption: 'Ice lake ❄️' }
+];
+
+// Function to create a post element
+function createPost(post) {
+  const div = document.createElement('div');
+  div.className = 'post';
+  
+  let media;
+  if(post.type === 'video') {
+    media = document.createElement('video');
+    media.src = post.src;
+    media.autoplay = true;
+    media.loop = true;
+    media.muted = true;
+  } else {
+    media = document.createElement('img');
+    media.src = post.src;
+  }
+  
+  div.appendChild(media);
+
+  const overlay = document.createElement('div');
+  overlay.className = 'overlay';
+  overlay.innerHTML = `<div class="username">${post.user}</div><div class="caption">${post.caption}</div>`;
+  div.appendChild(overlay);
+
+  const actions = document.createElement('div');
+  actions.className = 'actions';
+  actions.innerHTML = '<span>❤️</span><span>💬</span><span>↗️</span>';
+  div.appendChild(actions);
+
+  return div;
+}
+
+// Load initial 10 posts
+for(let i=0; i<10; i++) {
+  const post = postsData[Math.floor(Math.random()*postsData.length)];
+  feed.appendChild(createPost(post));
+}
+
+// Infinite scroll
+feed.addEventListener('scroll', () => {
+  if(feed.scrollTop + feed.clientHeight >= feed.scrollHeight - 100) {
+    for(let i=0; i<3; i++) {
+      const post = postsData[Math.floor(Math.random()*postsData.length)];
+      feed.appendChild(createPost(post));
+    }
+  }
+});
+</script>
+
+</body>
+</html>
