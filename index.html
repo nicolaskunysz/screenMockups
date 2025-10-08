@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Film Mockup Menu</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #f0f2f5;
+    margin: 0;
+    padding: 20px;
+  }
+  h1 {
+    text-align: center;
+  }
+  ul {
+    list-style: none;
+    padding: 0;
+    max-width: 400px;
+    margin: 0 auto;
+  }
+  li {
+    margin: 10px 0;
+  }
+  a {
+    display: block;
+    padding: 12px 15px;
+    background: #fff;
+    border-radius: 8px;
+    text-decoration: none;
+    color: #333;
+    font-weight: bold;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    transition: background 0.2s;
+  }
+  a:hover {
+    background: #e0e0e0;
+  }
+</style>
+</head>
+<body>
+
+<h1>Film Mockup Menu</h1>
+<ul>
+  <!-- Menu links SC1 to SC35 -->
+  <script>
+    for (let i = 1; i <= 35; i++) {
+      document.write(`<li><a href="SC${i}.html">SC${i}</a></li>`);
+    }
+  </script>
+</ul>
+
+</body>
+</html>
