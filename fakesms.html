@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Icelandic Android SMS Mockup - Animated Dark Mode</title>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family: 'Roboto', sans-serif;
+  background: #121212;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  color: #e0e0e0;
+}
+
+/* Header */
+.header {
+  height: 56px;
+  background: #1f1f1f;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0 16px;
+  font-weight: 500;
+  font-size: 1.1em;
+  flex-shrink: 0;
+  border-bottom: 1px solid #333;
+}
+
+.header-status {
+  font-size: 0.75em;
+  color: #888;
+  font-weight: 400;
+}
+
+.back-btn {
+  margin-right: 12px;
+  cursor: pointer;
+  font-size: 1.2em;
+}
+
+/* Contact List */
+.contacts {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  background: #121212;
+}
+
+.contact {
+  display: flex;
+  align-items: center;
+  padding: 14px 16px;
+  background: #1f1f1f;
+  border-bottom: 1px solid #333;
+  cursor: pointer;
+}
+
+.contact:hover { background: #2a2a2a; }
+
+.contact-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  margin-right: 12px;
+  background: #555;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: bold;
+  font-size: 1.2em;
+}
+
+.contact-name { font-weight: bold; }
+
+/* Chat Screen */
+.chat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #121212;
+}
+
+.chat-messages {
+  flex: 1;
+  padding: 12px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  scroll-behavior: smooth;
+}
+
+.message-container {
+  display: flex;
+  flex-direction: column;
+  max-width: 70%;
+  position: relative;
+  opacity: 0;
+  transform: translateY(20px);
+  animation: slideFadeIn 0.4s forwards;
+}
+
+@keyframes slideFadeIn {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.message {
+  padding: 10px 14px;
+  border-radius: 20px;
+  word-wrap: break-word;
+  font-size: 0.95em;
+  line-height: 1.3em;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  position: relative;
+}
+
+.sent {
+  background: #056162;
+  color: #fff;
+  align-self: flex-end;
+  border-bottom-right-radius: 4px;
+}
+
+.received {
+  background: #1f1f1f;
+  color: #e0e0e0;
+  align-self: flex-start;
+  border-bottom-left-radius: 4px;
+}
+
+.timestamp {
+  font-size: 0.7em;
+  color: #888;
+  margin-top: 2px;
+  align-self: flex-end;
+}
+
+.read-tick {
+  font-size: 0.7em;
+  color: #4fc3f7;
+  position: absolute;
+  bottom: 2px;
+  right: 4px;
+}
+
+/* Typing indicator */
+.typing-indicator {
+  display: flex;
+  gap: 4px;
+  padding: 10px 14px;
+  align-self: flex-start;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  background: #888;
+  border-radius: 50%;
+  animation: blink 1.4s infinite both;
+}
+
+.dot:nth-child(2) { animation-delay: 0.2s; }
+.dot:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes blink {
+  0%, 80%, 100% { opacity: 0; }
+  40% { opacity: 1; }
+}
+
+/* Input Bar */
+.input-bar {
+  display: flex;
+  padding: 8px 12px;
+  background: #1f1f1f;
+  border-top: 1px solid #333;
+  flex-shrink: 0;
+}
+
+.input-bar input {
+  flex: 1;
+  padding: 10px 16px;
+  border-radius: 24px;
+  border: 1px solid #333;
+  background: #121212;
+  color: #e0e0e0;
+  outline: none;
+  font-size: 1em;
+}
+
+.input-bar input::placeholder { color: #888; }
+
+.input-bar button {
+  margin-left: 8px;
+  padding: 10px 16px;
+  border: none;
+  background: #056162;
+  color: #fff;
+  border-radius: 24px;
+  cursor: pointer;
+  font-weight: bold;
+}
+</style>
+</head>
+<body>
+
+<div class="header" id="header">
+  Contacts
+  <div class="header-status" id="headerStatus"></div>
+</div>
+
+<div class="contacts" id="contacts"></div>
+
+<div class="chat" id="chat" style="display:none;">
+  <div class="chat-messages" id="chatMessages"></div>
+  <div class="input-bar">
+    <input type="text" id="messageInput" placeholder="Type a message...">
+    <button id="sendBtn">Send</button>
+  </div>
+</div>
+
+<script>
+const contactNames = [
+  "Bjartur í Sumarhúsum","Sigríður Fríða","Einar Þór","Halla Hrafnkelsdóttir",
+  "Snorri Sturluson Jr.","Þórdís Snæfríður","Jón Oddur","Rósa Ragnarsdóttir",
+  "Ólafur Skúli","Freydís Eiríksdóttir"
+];
+
+const emojis = ["😀","😂","😍","🤔","😎","😢","👍","👏","🙌","🔥"];
+const icelandicReplies = [
+  "Haha já 😄","Allt gott!","Hvernig hefur þú það?","😂😂",
+  "Mjög gott!","😅","🤔","Ég veit ekki…","🎉","👍",
+  "Fínn dagur í dag","Viltu koma í kaffi?","Ég er á leiðinni","Sjáumst seinna",
+  "Þetta er spennandi","Ég hlakka til","Hvað er að frétta?","Allt í lagi",
+  "Fáum okkur eitthvað að borða","Það hljómar vel","Gaman að sjá þig"
+];
+
+const chatHistory = {};
+const readStatus = {};
+contactNames.forEach(c=>{chatHistory[c]=[]; readStatus[c]=[];});
+
+const contactsEl=document.getElementById('contacts');
+const chatEl=document.getElementById('chat');
+const headerEl=document.getElementById('header');
+const headerStatusEl=document.getElementById('headerStatus');
+const chatMessagesEl=document.getElementById('chatMessages');
+const messageInput=document.getElementById('messageInput');
+const sendBtn=document.getElementById('sendBtn');
+
+let currentContact=null;
+let typingTimeout=null;
+
+contactNames.forEach(name=>{
+  const div=document.createElement('div');
+  div.className='contact';
+  div.innerHTML=`<div class="contact-avatar">${name[0]}</div><div class="contact-name">${name}</div>`;
+  div.addEventListener('click',()=>openChat(name));
+  contactsEl.appendChild(div);
+});
+
+function openChat(name){
+  currentContact=name;
+  contactsEl.style.display='none';
+  chatEl.style.display='flex';
+  headerEl.innerHTML=`<span class="back-btn" onclick="backToContacts()">⬅</span>${name}`;
+  headerStatusEl.innerText='Online';
+  renderMessages();
+}
+
+function backToContacts(){
+  chatEl.style.display='none';
+  contactsEl.style.display='block';
+  headerEl.innerText='Contacts';
+  headerStatusEl.innerText='';
+  currentContact=null;
+}
+
+function renderMessages(){
+  chatMessagesEl.innerHTML='';
+  if(!currentContact) return;
+  chatHistory[currentContact].forEach(msg=>{
+    const container=document.createElement('div');
+    container.className='message-container';
+    const div=document.createElement('div');
+    div.className='message '+msg.type;
+    div.innerText=msg.text;
+    container.appendChild(div);
+
+    const ts=document.createElement('div');
+    ts.className='timestamp';
+    ts.innerText=msg.timestamp;
+    container.appendChild(ts);
+
+    if(msg.type==='sent'){
+      const tick=document.createElement('div');
+      tick.className='read-tick';
+      tick.innerText=readStatus[currentContact][msg.index]?'✓✓':'✓';
+      container.appendChild(tick);
+    }
+
+    chatMessagesEl.appendChild(container);
+  });
+  chatMessagesEl.scrollTop=chatMessagesEl.scrollHeight;
+}
+
+function sendMessage(){
+  if(!currentContact) return;
+  const text=messageInput.value.trim();
+  if(!text) return;
+  const now=new Date();
+  const timestamp=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
+  const index=chatHistory[currentContact].length;
+  chatHistory[currentContact].push({type:'sent',text,timestamp,index});
+  readStatus[currentContact].push(false);
+  renderMessages();
+  messageInput.value='';
+
+  showTypingIndicator();
+  clearTimeout(typingTimeout);
+  typingTimeout=setTimeout(()=>{
+    hideTypingIndicator();
+    const reply=Math.random()<0.6?emojis[Math.floor(Math.random()*emojis.length)]:icelandicReplies[Math.floor(Math.random()*icelandicReplies.length)];
+    const replyTime=new Date();
+    const replyTimestamp=replyTime.getHours().toString().padStart(2,'0')+':'+replyTime.getMinutes().toString().padStart(2,'0');
+    chatHistory[currentContact].push({type:'received',text:reply,timestamp:replyTimestamp});
+    readStatus[currentContact][index]=true;
+    renderMessages();
+  },1000+Math.random()*1000);
+}
+
+function showTypingIndicator(){
+  const typing=document.createElement('div');
+  typing.className='typing-indicator';
+  typing.id='typingIndicator';
+  typing.innerHTML='<div class="dot"></div><div class="dot"></div><div class="dot"></div>';
+  chatMessagesEl.appendChild(typing);
+  chatMessagesEl.scrollTop=chatMessagesEl.scrollHeight;
+}
+
+function hideTypingIndicator(){
+  const indicator=document.getElementById('typingIndicator');
+  if(indicator) indicator.remove();
+}
+
+sendBtn.addEventListener('click',sendMessage);
+messageInput.addEventListener('keypress',e=>{if(e.key==='Enter')sendMessage();});
+
+setInterval(()=>{
+  const contact=contactNames[Math.floor(Math.random()*contactNames.length)];
+  const text=Math.random()<0.5?emojis[Math.floor(Math.random()*emojis.length)]:icelandicReplies[Math.floor(Math.random()*icelandicReplies.length)];
+  const now=new Date();
+  const timestamp=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
+  chatHistory[contact].push({type:'received',text,timestamp});
+  if(contact===currentContact) renderMessages();
+},15000);
+
+window.addEventListener("load",()=>{setTimeout(()=>{window.scrollTo(0,1);},0);});
+</script>
+</body>
+</html>
