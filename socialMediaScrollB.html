@@ -2,8 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Infinite TikTok Mockup - 30 Posts</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Infinite TikTok Mockup - Fullscreen</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -20,6 +23,7 @@
     width: 100vw;
     overflow-y: scroll;
     scroll-snap-type: y mandatory;
+    -webkit-overflow-scrolling: touch;
   }
 
   .post {
@@ -93,7 +97,7 @@
 <script>
 const feed = document.getElementById('feed');
 
-// Array of 30 unique posts
+// 30 unique posts (images, GIFs, videos)
 const postsData = [
   { type: 'gif', src: 'https://media.giphy.com/media/ICOgUNjpvO0PC/giphy.gif', user: '@dancingcat', caption: 'When the beat drops 😸🎶' },
   { type: 'image', src: 'https://picsum.photos/1080/1920?random=1', user: '@wanderlust', caption: 'Morning hike through the misty woods 🌲' },
@@ -128,7 +132,7 @@ const postsData = [
   { type: 'video', src: 'https://samplelib.com/lib/preview/mp4/sample-5s.mp4', user: '@frozenlake', caption: 'Ice lake ❄️' }
 ];
 
-// Function to create a post element
+// Create a post element
 function createPost(post) {
   const div = document.createElement('div');
   div.className = 'post';
@@ -160,7 +164,7 @@ function createPost(post) {
   return div;
 }
 
-// Load initial 10 posts
+// Initial 10 posts
 for(let i=0; i<10; i++) {
   const post = postsData[Math.floor(Math.random()*postsData.length)];
   feed.appendChild(createPost(post));
@@ -175,6 +179,9 @@ feed.addEventListener('scroll', () => {
     }
   }
 });
+
+// Hide URL bar on mobile
+window.addEventListener("load", () => { setTimeout(() => { window.scrollTo(0, 1); }, 0); });
 </script>
 
 </body>
