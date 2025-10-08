@@ -8,8 +8,17 @@
 <meta name="mobile-web-app-capable" content="yes">
 <title>Full Screen News Article</title>
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  html, body { height: 100%; font-family: 'Roboto', sans-serif; background: #000; overflow: hidden; }
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  html, body {
+    height: 100%;
+    background: #000;
+    overflow: hidden;
+  }
 
   main {
     height: 100vh;
@@ -22,19 +31,23 @@
 
   main img {
     display: block;
-    max-width: 100%;
-    height: auto; /* maintain natural aspect ratio */
+    width: 100%;
+    height: auto;
   }
 </style>
 </head>
 <body>
   <main>
-    <img src="images/sc221-news-article-about-elisabet-NO-HEADER.png" alt="News Article">
+    <img src="sc221-news-article-about-elisabet-NO-HEADER.png" alt="News Article">
   </main>
 
-<script>
-  // Hide mobile URL bar
-  window.addEventListener("load", () => { setTimeout(() => { window.scrollTo(0, 1); }, 0); });
-</script>
+  <script>
+    // Hide mobile browser URL bar on load
+    window.addEventListener("load", () => {
+      setTimeout(() => {
+        window.scrollTo(0, 1);
+      }, 0);
+    });
+  </script>
 </body>
 </html>
