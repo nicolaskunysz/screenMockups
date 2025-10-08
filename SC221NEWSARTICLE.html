@@ -6,48 +6,41 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="mobile-web-app-capable" content="yes">
-<title>Full Screen News Article</title>
+<title>Full Screen Image</title>
 <style>
-  * {
+  html, body {
     margin: 0;
     padding: 0;
-    box-sizing: border-box;
-  }
-
-  html, body {
     height: 100%;
     background: #000;
     overflow: hidden;
   }
-
-  main {
-    height: 100vh;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
+  body {
     display: flex;
     justify-content: center;
-    background: #000;
+    align-items: flex-start;
   }
-
-  main img {
-    display: block;
+  .scrollable-image {
+    width: 100%;
+    max-height: 100%;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  img {
     width: 100%;
     height: auto;
+    display: block;
   }
 </style>
 </head>
 <body>
-  <main>
-    <img src="sc221 news article about elisabet.png" alt="News Article">
-  </main>
+  <div class="scrollable-image">
+    <img src="sc221 news article about elisabet.png" alt="Full Screen Article">
+  </div>
 
   <script>
-    // Hide mobile browser URL bar on load
-    window.addEventListener("load", () => {
-      setTimeout(() => {
-        window.scrollTo(0, 1);
-      }, 0);
-    });
+    // Hide mobile URL bar for immersive full screen
+    window.addEventListener("load", () => { setTimeout(() => { window.scrollTo(0, 1); }, 0); });
   </script>
 </body>
 </html>
