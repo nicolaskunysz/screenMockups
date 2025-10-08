@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Phone Social Media Mockup</title>
+
+<!-- Hide browser UI for mobile -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+
+<style>
+  body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #f0f2f5;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  main {
+    padding-bottom: 60px; /* space for bottom nav */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .post {
+    background: #fff;
+    margin: 10px 0;
+    width: 95%;
+    max-width: 400px;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    overflow: hidden;
+  }
+
+  .post-header {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+  }
+
+  .avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    margin-right: 10px;
+  }
+
+  .username {
+    font-weight: bold;
+  }
+
+  .timestamp {
+    font-size: 0.8em;
+    color: gray;
+    margin-left: auto;
+  }
+
+  .post-image {
+    width: 100%;
+    display: block;
+  }
+
+  .post-actions {
+    display: flex;
+    padding: 10px;
+    border-top: 1px solid #eee;
+    border-bottom: 1px solid #eee;
+  }
+
+  .post-actions div {
+    margin-right: 15px;
+    cursor: pointer;
+    font-size: 1.2em;
+  }
+
+  .post-caption {
+    padding: 10px;
+  }
+
+  .post-caption p {
+    margin: 5px 0 0 0;
+  }
+
+  /* Bottom nav bar */
+  .bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background: #fff;
+    border-top: 1px solid #ddd;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    z-index: 10;
+  }
+  .bottom-nav div {
+    font-size: 1.5em;
+    cursor: pointer;
+  }
+</style>
+</head>
+<body>
+
+<main id="feed">
+  <!-- Posts will be injected here -->
+</main>
+
+<!-- Bottom nav -->
+<div class="bottom-nav">
+  <div>🏠</div>
+  <div>🔍</div>
+  <div>➕</div>
+  <div>❤️</div>
+  <div>👤</div>
+</div>
+
+<script>
+const feed = document.getElementById('feed');
+
+// 30 different public domain images (Unsplash)
+const images = [
+"https://images.unsplash.com/photo-1503023345310-bd7c1de61c7d?auto=format&fit=crop&w=600&q=80",
+"https://images.unsplash.com/photo-1518806118471-f28b20a1d79d?auto=format&fit=crop&w=600&q=80",
+"https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=600&q=80",
+"https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=600&q=80",
+"https://images.unsplash.com/photo-1504198458649-3128b932f49f?auto=format&fit=crop&w=600&q=80",
+"https://images.unsplash.com/photo-1510626176961-4b54e72f6c44?auto=format&fit=crop&w=600&q=80",
+"https://images.unsplash.com/photo-1523475496153-3d6cc1a1d9f2?auto=format&fit=crop&w=600&q=80",
+"https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=600&q=80",
+"https://images.unsplash.com/photo-1485217988980-11786ced9454?auto=format&fit=crop&w=600&q=80",
+"https://images.unsplash.com/photo-1519999482648-25049ddd37b1?auto=format&fit=crop&w=600&q=80",
+"https://images.unsplash.com/photo-1493106641515-6b5631de4bb9?auto=format&fit=crop&w=600&q=80",
+"https://images.unsplash.com/photo-1519817914152-22f1e8c6d1a6?auto=format&fit=crop&w=600&q=80",
+"https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=600&q=80",
+"https://images.unsplash.com/photo-1481277542470-605612bd2d61?auto=format&fit=crop&w=600&q=80",
+"https://images.unsplash.com/photo-1518183214770-9cffbec72538?auto=format&fit=crop&w=600&q=80",
+"https://images.unsplash.com/photo-1523413651479-597eb2da0ad6?auto=format&fit=crop&w=600&q=80",
+"https://images.unsplash.com/photo-1505672678657-cc7037095e1e?auto=format&fit=crop&w=600&q=80",
+"https://images.unsplash.com/photo-1472214103451-9374bd1c798e?auto=format&fit=crop&w=600&q=80",
+"https://images.unsplash.com/photo-1519682577862-22b62b24e493?auto=format&fit=crop&w=600&q=80",
+"https://images.unsplash.com/photo-1506784983877-45594efa4cbe?auto=format&fit=crop&w=600&q=80",
+"https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=600&q=80",
+"https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?auto=format&fit=crop&w=600&q=80",
+"https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=600&q=80",
+"https://images.unsplash.com/photo-1523413651479-597eb2da0ad6?auto=format&fit=crop&w=600&q=80",
+"https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=600&q=80",
+"https://images.unsplash.com/photo-1505672678657-cc7037095e1e?auto=format&fit=crop&w=600&q=80",
+"https://images.unsplash.com/photo-1485217988980-11786ced9454?auto=format&fit=crop&w=600&q=80",
+"https://images.unsplash.com/photo-1519682577862-22b62b24e493?auto=format&fit=crop&w=600&q=80",
+"https://images.unsplash.com/photo-1519999482648-25049ddd37b1?auto=format&fit=crop&w=600&q=80",
+"https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?auto=format&fit=crop&w=600&q=80"
+];
+
+// Users
+const users = ["@aldismovie", "@akranesnews", "@filmonset", "@publicdomainfan", "@mockupstudio"];
+const captions = [
+  "Check out this amazing view! / Skoðaðu þessa ótrúlegu útsýni!",
+  "Filming on set today 🎬 / Tökur á staðnum í dag 🎬",
+  "Public domain images are lifesavers! / Opinberar myndir bjarga lífi!",
+  "Just another sunny day in Iceland ☀️ / Bara annar sólskinsdagur á Íslandi ☀️",
+  "Mocking up social feeds for our project! / Að búa til samfélagsmiðlaflæði fyrir verkefnið okkar!"
+];
+
+const timestamps = ["2h","5h","1d","3d","1w"];
+
+// Generate a post
+function generatePost(i){
+  const post = document.createElement('div');
+  post.className='post';
+  post.innerHTML=`
+    <div class="post-header">
+      <img class="avatar" src="https://i.pravatar.cc/40?img=${i+10}" alt="avatar">
+      <div class="username">${users[i % users.length]}</div>
+      <div class="timestamp">${timestamps[i % timestamps.length]}</div>
+    </div>
+    <img class="post-image" src="${images[i % images.length]}" alt="post image">
+    <div class="post-actions">
+      <div>❤️</div>
+      <div>💬</div>
+      <div>🔗</div>
+    </div>
+    <div class="post-caption"><p>${captions[i % captions.length]}</p></div>
+  `;
+  feed.appendChild(post);
+}
+
+// Initial 30 posts
+for(let i=0;i<30;i++) generatePost(i);
+
+// Infinite scroll: add 5 more posts
+let postCount = 30;
+window.addEventListener('scroll',()=>{
+  if((window.innerHeight+window.scrollY)>=document.body.offsetHeight-100){
+    for(let i=0;i<5;i++){
+      generatePost(postCount);
+      postCount++;
+    }
+  }
+});
+</script>
+
+<!-- Bottom nav -->
+<div class="bottom-nav">
+  <div>🏠</div>
+  <div>🔍</div>
+  <div>➕</div>
+  <div>❤️</div>
+  <div>👤</div>
+</div>
+
+</body>
+</html>
