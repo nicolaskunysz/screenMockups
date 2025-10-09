@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Dark Email Client Mock</title>
+<style>
+  /* --- Base --- */
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{font-family:Inter, "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial; background:#0f1113; color:#e6eef6; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;}
+
+  /* --- Layout --- */
+  .app{display:flex;height:100vh;overflow:hidden}
+  .sidebar{width:220px;background:#0f1315;border-right:1px solid rgba(255,255,255,0.03);padding:20px;display:flex;flex-direction:column;gap:12px}
+  .logo{font-weight:700;font-size:18px;color:#fff;margin-bottom:6px}
+  .compose{background:#1f6feb;border:none;color:#fff;padding:10px 12px;border-radius:8px;cursor:pointer;font-weight:600}
+  .folders{list-style:none;margin-top:6px;flex:1;overflow:auto}
+  .folders li{padding:10px;border-radius:8px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;color:#cfe6ff}
+  .folders li.active{background:rgba(255,255,255,0.03)}
+  .folder-name{display:flex;gap:10px;align-items:center}
+  .count{background:#2a2f36;padding:3px 8px;border-radius:999px;font-size:12px;color:#bcd7ff}
+
+  /* --- Main view --- */
+  .main{flex:1;display:flex;flex-direction:column}
+  .toolbar{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.03);background:linear-gradient(180deg, rgba(255,255,255,0.01), transparent)}
+  .search{flex:1}
+  .search input{width:100%;padding:8px 10px;border-radius:8px;border:none;background:#0b0d0f;color:#dcefff}
+  .container{flex:1;display:flex;min-height:0} /* min-height:0 so children can scroll */
+
+  /* --- List (left) --- */
+  .list-pane{width:360px;border-right:1px solid rgba(255,255,255,0.03);display:flex;flex-direction:column;background:#0f1214;overflow:hidden}
+  .pinned{position:sticky;top:0;background:linear-gradient(180deg, rgba(15,18,20,0.96), rgba(15,18,20,0.9));z-index:3;border-bottom:1px solid rgba(255,255,255,0.02)}
+  .pinned .section-title{padding:10px 14px;color:#9fbefc;font-weight:600;font-size:13px}
+  .list{flex:1;overflow:auto}
+  .email-row{display:flex;align-items:center;padding:12px 14px;border-bottom:1px dashed rgba(255,255,255,0.02);cursor:pointer;gap:12px}
+  .email-row:hover{background:rgba(255,255,255,0.02)}
+  .email-row.selected{background:linear-gradient(90deg, rgba(30,66,255,0.06), rgba(255,255,255,0.01))}
+  .avatar{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;background:#22313f;flex-shrink:0}
+  .meta{flex:1;display:flex;flex-direction:column;min-width:0}
+  .meta .top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .sender{font-weight:700;color:#e9f3ff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px}
+  .subject{color:#c9d9ee;margin-top:4px;font-weight:600;display:flex;align-items:center;gap:8px}
+  .snippet{font-size:13px;color:#93a6bf;margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .date{font-size:12px;color:#7f95ae;white-space:nowrap}
+  .dot{width:9px;height:9px;border-radius:999px;background:#3fbf7f;margin-left:8px}
+
+  /* New badge */
+  .badge-new{background:#ff5f57;color:#111;padding:3px 6px;border-radius:12px;font-size:11px;margin-left:8px}
+
+  /* --- Content (right) --- */
+  .content-pane{flex:1;display:flex;flex-direction:column;min-width:0}
+  .content-top{padding:18px 20px;border-bottom:1px solid rgba(255,255,255,0.02);display:flex;align-items:center;justify-content:space-between}
+  .content-body{padding:20px;overflow:auto}
+  .email-title{font-size:20px;font-weight:700;color:#fff;margin-bottom:8px}
+  .email-meta{color:#9fb6d6;margin-bottom:14px;font-size:13px}
+  .email-text{line-height:1.6;color:#dbeefc}
+  .attachments{margin-top:14px;display:flex;flex-wrap:wrap;gap:8px}
+  .att{display:flex;align-items:center;gap:8px;padding:8px 10px;background:#0c1418;border-radius:8px;border:1px solid rgba(255,255,255,0.02);color:#bcd7ff;font-weight:600}
+  .att svg{width:18px;height:18px;opacity:0.9}
+
+  /* Controls in top-right of content */
+  .controls{display:flex;gap:10px;align-items:center}
+  .btn{background:#17202a;color:#dff0ff;padding:8px 10px;border-radius:8px;border:none;cursor:pointer}
+  .btn.ghost{background:transparent;border:1px solid rgba(255,255,255,0.04)}
+  .unread-toggle{background:#251a2a;color:#ffd8df;border-radius:8px;padding:6px 8px;font-weight:700}
+
+  /* small helpers */
+  .muted{color:#7f95ae}
+  .center{display:flex;align-items:center;gap:10px}
+
+  /* Responsive */
+  @media (max-width:920px){
+    .list-pane{width:100%;height:45vh;border-right:none;border-bottom:1px solid rgba(255,255,255,0.03)}
+    .container{flex-direction:column}
+    .content-body{height:55vh}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar" aria-label="sidebar">
+    <div class="logo">Mail</div>
+    <button class="compose" id="composeBtn">Compose</button>
+    <ul class="folders" id="folders">
+      <li data-folder="inbox" class="active"><span class="folder-name">Inbox</span><span class="count" id="c-inbox">0</span></li>
+      <li data-folder="sent"><span class="folder-name">Sent</span><span class="count" id="c-sent">0</span></li>
+      <li data-folder="spam"><span class="folder-name">Spam</span><span class="count" id="c-spam">0</span></li>
+      <li data-folder="trash"><span class="folder-name">Trash</span><span class="count" id="c-trash">0</span></li>
+    </ul>
+    <div class="muted" style="font-size:13px;padding-top:8px">Designed for props — responsive & local</div>
+  </aside>
+
+  <main class="main" role="main">
+    <div class="toolbar">
+      <div class="search">
+        <input id="search" placeholder="Search by sender or subject..." />
+      </div>
+      <div class="center muted">Newest first</div>
+    </div>
+
+    <div class="container">
+      <!-- Left list -->
+      <section class="list-pane" aria-label="email list">
+        <div class="pinned">
+          <div class="section-title">Recent (top 5)</div>
+        </div>
+        <div class="list" id="list"></div>
+        <div style="padding:8px 12px;border-top:1px solid rgba(255,255,255,0.02);font-size:13px;color:#9fbefc">All messages (scroll)</div>
+        <div class="list" id="fullList" style="border-top:1px solid rgba(255,255,255,0.02);max-height:260px;overflow:auto"></div>
+      </section>
+
+      <!-- Right content -->
+      <section class="content-pane" aria-label="email content">
+        <div class="content-top">
+          <div class="muted">Folder: <strong id="folderLabel">Inbox</strong></div>
+          <div class="controls">
+            <button class="btn ghost" id="markAll">Mark all read</button>
+            <button class="btn" id="deleteBtn">Move to Trash</button>
+          </div>
+        </div>
+
+        <div class="content-body" id="content">
+          <div style="text-align:center;color:#7f95ae;padding:60px">Select an email on the left to read it — the top 5 remain visible above the list.</div>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<!-- Compose Modal -->
+<div id="modal" style="display:none;position:fixed;inset:0;background:rgba(2,6,10,0.7);z-index:999;align-items:center;justify-content:center">
+  <div style="width:92%;max-width:640px;background:#0f1416;padding:18px;border-radius:12px;border:1px solid rgba(255,255,255,0.03)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div style="font-weight:800;color:#eaf6ff">New Message</div>
+      <button id="closeModal" style="background:transparent;border:1px solid rgba(255,255,255,0.04);color:#dbefff;padding:6px 10px;border-radius:8px;cursor:pointer">Close</button>
+    </div>
+    <input id="to" placeholder="To" style="width:100%;padding:10px;border-radius:8px;border:none;background:#071018;color:#eaf6ff;margin-bottom:8px" />
+    <input id="subject" placeholder="Subject" style="width:100%;padding:10px;border-radius:8px;border:none;background:#071018;color:#eaf6ff;margin-bottom:8px" />
+    <textarea id="body" rows="7" placeholder="Write your message..." style="width:100%;padding:10px;border-radius:8px;border:none;background:#071018;color:#eaf6ff;margin-bottom:8px"></textarea>
+    <input id="attachments" placeholder="Attachments (comma separated names)" style="width:100%;padding:10px;border-radius:8px;border:none;background:#071018;color:#eaf6ff;margin-bottom:12px" />
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button id="send" class="btn">Send</button>
+      <button id="discard" class="btn ghost">Discard</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* -------------------------
+   Sample emails (60-ish)
+   Mostly Icelandic + some English
+   Dates are ISO YYYY-MM-DD
+   -------------------------*/
+const initialEmails = [
+  // Inbox (20)
+  {id:1, folder:'inbox', sender:'Jónas', subject:'Skýrsla fyrir fundinn', body:'Hér er skýrsla sem þú baðst um. Vinsamlegast skoðaðu.', date:'2025-10-09', attachments:['report.pdf'], read:false},
+  {id:2, folder:'inbox', sender:'Anna', subject:'Tímasetning', body:'Við skulum hittast á morgun klukkan 10.', date:'2025-10-08', attachments:[], read:false},
+  {id:3, folder:'inbox', sender:'Magnús', subject:'Nýtt verkefni', body:'Við þurfum að byrja á nýja verkefninu á næstu viku.', date:'2025-10-07', attachments:['project.doc'], read:false},
+  {id:4, folder:'inbox', sender:'Sara', subject:'Móttaka', body:'Takk fyrir að mæta.', date:'2025-10-06', attachments:['invitation.jpg'], read:false},
+  {id:5, folder:'inbox', sender:'Emily', subject:'Project update', body:'The latest update is attached.', date:'2025-10-05', attachments:['update.doc'], read:false},
+  {id:6, folder:'inbox', sender:'Steinunn', subject:'Fundargerð', body:'Fundargerð síðasta fundar er meðfylgjandi.', date:'2025-10-04', attachments:['minutes.pdf'], read:false},
+  {id:7, folder:'inbox', sender:'Ólafur', subject:'Úttekt', body:'Hér er úttekt á síðasta verkefni.', date:'2025-10-03', attachments:['report.pdf'], read:false},
+  {id:8, folder:'inbox', sender:'Laura', subject:'Meeting agenda', body:'Attached is the agenda for the meeting.', date:'2025-10-02', attachments:['agenda.pdf'], read:false},
+  {id:9, folder:'inbox', sender:'Pétur', subject:'Bókun', body:'Vinsamlegast staðfestu bókunina.', date:'2025-10-01', attachments:[], read:false},
+  {id:10, folder:'inbox', sender:'Kristín', subject:'Viðburður', body:'Viðburðurinn hefst kl. 18:00.', date:'2025-09-30', attachments:[], read:false},
+  {id:11, folder:'inbox', sender:'Björn', subject:'Leiðbeiningar', body:'Fylgdu þessum leiðbeiningum til að ljúka verkefni.', date:'2025-09-29', attachments:[], read:false},
+  {id:12, folder:'inbox', sender:'Hanna', subject:'Viðvörun', body:'Athugaðu nýja viðvörun sem kom frá kerfinu.', date:'2025-09-28', attachments:['alert.pdf'], read:false},
+  {id:13, folder:'inbox', sender:'Ragnar', subject:'Skilaskrá', body:'Skilaskrá fyrir síðasta verkefni er hér.', date:'2025-09-27', attachments:['submission.doc'], read:false},
+  {id:14, folder:'inbox', sender:'Olivia', subject:'Follow-up', body:'Following up on our last discussion.', date:'2025-09-26', attachments:[], read:false},
+  {id:15, folder:'inbox', sender:'Sigríður', subject:'Viðurkenning', body:'Þakka þér fyrir góða vinnu.', date:'2025-09-25', attachments:[], read:false},
+  {id:16, folder:'inbox', sender:'Karl', subject:'Skýrsla', body:'Hér er ný skýrsla.', date:'2025-09-24', attachments:['report.pdf'], read:false},
+  {id:17, folder:'inbox', sender:'Emma', subject:'Document review', body:'Please review the attached document.', date:'2025-09-23', attachments:['document.doc'], read:false},
+  {id:18, folder:'inbox', sender:'Jóhanna', subject:'Móttaka', body:'Við skulum funda á morgun.', date:'2025-09-22', attachments:[], read:false},
+  {id:19, folder:'inbox', sender:'Lars', subject:'Project timeline', body:'The timeline for the project is attached.', date:'2025-09-21', attachments:['timeline.pdf'], read:false},
+  {id:20, folder:'inbox', sender:'Tinna', subject:'Uppfærsla', body:'Allar breytingar hafa verið skráðar.', date:'2025-09-20', attachments:[], read:false},
+
+  // Spam (12)
+  {id:21, folder:'spam', sender:'SpamBot', subject:'You won $1,000,000!', body:'Click here to claim your prize!', date:'2025-09-19', attachments:[], read:false},
+  {id:22, folder:'spam', sender:'CheapMed', subject:'Discounted medicines', body:'Buy cheap medicines online.', date:'2025-09-18', attachments:[], read:false},
+  {id:23, folder:'spam', sender:'Lottery', subject:'Congratulations!', body:'You are our lucky winner!', date:'2025-09-17', attachments:[], read:false},
+  {id:24, folder:'spam', sender:'FakeInvoice', subject:'Invoice overdue', body:'Please pay immediately.', date:'2025-09-16', attachments:['invoice.pdf'], read:false},
+  {id:25, folder:'spam', sender:'Phishing', subject:'Account alert', body:'Your account has been compromised.', date:'2025-09-15', attachments:[], read:false},
+  {id:26, folder:'spam', sender:'WinBig', subject:'Claim your reward', body:'You are selected!', date:'2025-09-14', attachments:[], read:false},
+  {id:27, folder:'spam', sender:'LotteryBot', subject:'Jackpot!', body:'Click to claim $500k!', date:'2025-09-13', attachments:[], read:false},
+  {id:28, folder:'spam', sender:'ScamCorp', subject:'Urgent payment', body:'Pay now or lose your account.', date:'2025-09-12', attachments:[], read:false},
+  {id:29, folder:'spam', sender:'FakeOffer', subject:'Limited time offer!', body:'Buy now!', date:'2025-09-11', attachments:[], read:false},
+  {id:30, folder:'spam', sender:'MoneyBot', subject:'You got money!', body:'Claim now!', date:'2025-09-10', attachments:[], read:false},
+  {id:31, folder:'spam', sender:'FakeSurvey', subject:'Complete survey', body:'Win prizes!', date:'2025-09-09', attachments:[], read:false},
+  {id:32, folder:'spam', sender:'Promo', subject:'Special offer inside', body:'Discounts for a limited time.', date:'2025-09-08', attachments:[], read:false},
+
+  // Trash (8)
+  {id:33, folder:'trash', sender:'OldContact', subject:'Re: Meeting', body:'Thanks for your email.', date:'2025-09-07', attachments:[], read:true},
+  {id:34, folder:'trash', sender:'Newsletter', subject:'Weekly news', body:'This newsletter is outdated.', date:'2025-09-06', attachments:[], read:true},
+  {id:35, folder:'trash', sender:'Tom', subject:'Vacation photos', body:'Sent old photos.', date:'2025-09-05', attachments:['photo1.jpg','photo2.jpg'], read:true},
+  {id:36, folder:'trash', sender:'Maria', subject:'Old invoice', body:'Please disregard.', date:'2025-09-04', attachments:['invoice.doc'], read:true},
+  {id:37, folder:'trash', sender:'OldFriend', subject:'Hello', body:'Just saying hi.', date:'2025-09-03', attachments:[], read:true},
+  {id:38, folder:'trash', sender:'OldClient', subject:'Invoice', body:'Old invoice, ignore.', date:'2025-09-02', attachments:['invoice_old.pdf'], read:true},
+  {id:39, folder:'trash', sender:'Archive', subject:'Past notes', body:'Archived notes.', date:'2025-09-01', attachments:[], read:true},
+  {id:40, folder:'trash', sender:'Store', subject:'Your receipt', body:'Old receipt attached.', date:'2025-08-31', attachments:['receipt.pdf'], read:true},
+
+  // Sent (initial - 5)
+  {id:41, folder:'sent', sender:'Me', subject:'Re: Skýrsla', body:'Sent the updated report.', date:'2025-08-30', attachments:['report_v2.pdf'], read:true},
+  {id:42, folder:'sent', sender:'Me', subject:'Meeting summary', body:'Summary attached.', date:'2025-08-29', attachments:[], read:true},
+  {id:43, folder:'sent', sender:'Me', subject:'Thanks', body:'Thanks for the help.', date:'2025-08-28', attachments:[], read:true},
+  {id:44, folder:'sent', sender:'Me', subject:'Invoice', body:'Please find invoice attached.', date:'2025-08-27', attachments:['invoice.pdf'], read:true},
+  {id:45, folder:'sent', sender:'Me', subject:'Project files', body:'Uploading the files shortly.', date:'2025-08-26', attachments:[], read:true}
+];
+
+/* Working dataset */
+let emails = JSON.parse(JSON.stringify(initialEmails)); // deep copy so later changes are local
+let selectedEmailId = null;
+let currentFolder = 'inbox';
+
+/* DOM elements */
+const listEl = document.getElementById('list');
+const fullListEl = document.getElementById('fullList');
+const contentEl = document.getElementById('content');
+const searchInput = document.getElementById('search');
+const folderEls = document.querySelectorAll('.folders li');
+const folderLabel = document.getElementById('folderLabel');
+const counts = {
+  inbox: document.getElementById('c-inbox'),
+  sent: document.getElementById('c-sent'),
+  spam: document.getElementById('c-spam'),
+  trash: document.getElementById('c-trash')
+};
+
+/* Compose modal elements */
+const modal = document.getElementById('modal');
+const composeBtn = document.getElementById('composeBtn');
+const closeModal = document.getElementById('closeModal');
+const sendBtn = document.getElementById('send');
+const discardBtn = document.getElementById('discard');
+const toInput = document.getElementById('to');
+const subjectInput = document.getElementById('subject');
+const bodyInput = document.getElementById('body');
+const attInput = document.getElementById('attachments');
+
+/* Buttons */
+document.getElementById('markAll').addEventListener('click', () => {
+  emails.filter(e => e.folder===currentFolder).forEach(e=>e.read=true);
+  render();
+});
+document.getElementById('deleteBtn').addEventListener('click', () => {
+  if(!selectedEmailId) return;
+  const idx = emails.findIndex(e=>e.id===selectedEmailId);
+  if(idx>-1){
+    emails[idx].folder = 'trash';
+    selectedEmailId = null;
+    render();
+  }
+});
+
+/* Folder click */
+folderEls.forEach(li=>{
+  li.addEventListener('click', ()=>{
+    folderEls.forEach(x=>x.classList.remove('active'));
+    li.classList.add('active');
+    currentFolder = li.dataset.folder;
+    selectedEmailId = null;
+    render();
+  });
+});
+
+/* Search */
+searchInput.addEventListener('input', ()=> { selectedEmailId = null; render(); });
+
+/* Compose modal */
+composeBtn.addEventListener('click', ()=> {
+  modal.style.display='flex';
+  toInput.value=''; subjectInput.value=''; bodyInput.value=''; attInput.value='';
+});
+closeModal.addEventListener('click', ()=> modal.style.display='none');
+discardBtn.addEventListener('click', ()=> modal.style.display='none');
+sendBtn.addEventListener('click', ()=>{
+  // Create new sent email
+  const newid = (emails.reduce((m,e)=>Math.max(m,e.id),0))+1;
+  const now = new Date().toISOString().split('T')[0];
+  const attachments = attInput.value ? attInput.value.split(',').map(a=>a.trim()).filter(Boolean) : [];
+  const newEmail = { id:newid, folder:'sent', sender:'Me', subject: subjectInput.value || '(No subject)', body: bodyInput.value || '', date: now, attachments, read:true };
+  emails.push(newEmail);
+  modal.style.display='none';
+  // switch to sent and show it
+  currentFolder = 'sent';
+  folderEls.forEach(x=>x.classList.toggle('active', x.dataset.folder==='sent'));
+  selectedEmailId = newEmail.id;
+  render();
+});
+
+/* Helpers - attachment icon (SVG) */
+function fileIcon(ext){
+  // simple inline SVG for file or image
+  if(!ext) ext = 'file';
+  if(ext.match(/\.(jpg|jpeg|png|gif|svg)$/i)) {
+    return `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 3h14l4 4v11a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" stroke="#a9d1ff" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 14l3-4 4 5" stroke="#a9d1ff" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  }
+  return `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="4" width="12" height="16" rx="2" stroke="#a9d1ff" stroke-width="1.2"/><path d="M7 8h6" stroke="#a9d1ff" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+}
+
+/* Render counts */
+function updateCounts(){
+  counts.inbox.textContent = emails.filter(e=>e.folder==='inbox').length;
+  counts.sent.textContent = emails.filter(e=>e.folder==='sent').length;
+  counts.spam.textContent = emails.filter(e=>e.folder==='spam').length;
+  counts.trash.textContent = emails.filter(e=>e.folder==='trash').length;
+}
+
+/* Render lists & content */
+function render(){
+  updateCounts();
+  folderLabel.textContent = currentFolder.charAt(0).toUpperCase() + currentFolder.slice(1);
+  const q = (searchInput.value || '').toLowerCase();
+
+  // filtered & sorted newest-first
+  const filtered = emails.filter(e => e.folder===currentFolder && (e.sender.toLowerCase().includes(q) || e.subject.toLowerCase().includes(q))).sort((a,b)=> new Date(b.date) - new Date(a.date));
+
+  // top 5 pinned
+  const pinned = filtered.slice(0,5);
+  const rest = filtered.slice(5);
+
+  listEl.innerHTML = '';
+  pinned.forEach(e => listEl.appendChild(renderListRow(e)));
+
+  fullListEl.innerHTML = '';
+  rest.forEach(e => fullListEl.appendChild(renderListRow(e)));
+
+  // content: if selectedEmailId -> show, else placeholder
+  if(selectedEmailId){
+    const email = emails.find(x=>x.id===selectedEmailId);
+    if(email){
+      renderContent(email);
+    } else {
+      contentEl.innerHTML = `<div style="padding:40px;color:#8fb3dd">Selected email not found.</div>`;
+    }
+  } else {
+    // show placeholder but keep top 5 visible
+    contentEl.innerHTML = `<div style="padding:40px;color:#7f95ae"><strong>${filtered.length}</strong> messages in ${currentFolder}. Select one to open. Top 5 are pinned above.</div>`;
+  }
+}
+
+/* Create one row DOM */
+function renderListRow(email){
+  const row = document.createElement('div');
+  row.className = 'email-row';
+  if(email.selected) row.classList.add('selected');
+  if(!email.read) row.classList.add('unread');
+
+  // avatar (initials)
+  const av = document.createElement('div');
+  av.className = 'avatar';
+  av.textContent = getInitials(email.sender);
+
+  const meta = document.createElement('div');
+  meta.className = 'meta';
+  meta.innerHTML = `
+    <div class="top">
+      <div style="display:flex;gap:8px;align-items:center">
+        <div class="sender">${escapeHtml(email.sender)}</div>
+        ${!email.read?'<div class="badge-new">New</div>':''}
+      </div>
+      <div class="date">${email.date}</div>
+    </div>
+    <div class="subject">${escapeHtml(email.subject)}</div>
+    <div class="snippet">${escapeHtml(email.body).slice(0,120)}</div>
+  `;
+
+  row.appendChild(av);
+  row.appendChild(meta);
+
+  // small dot to mark unread quickly
+  const dot = document.createElement('div');
+  dot.style.marginLeft='8px';
+  dot.style.marginRight='12px';
+  dot.innerHTML = `<div class="dot" title="Toggle read/unread" style="background:${email.read?'transparent':'#3fbf7f'};border:${email.read?'1px solid rgba(255,255,255,0.04)':'none'}"></div>`;
+  dot.style.cursor='pointer';
+  dot.addEventListener('click', (ev)=>{
+    ev.stopPropagation();
+    email.read = !email.read;
+    render();
+  });
+  row.appendChild(dot);
+
+  row.addEventListener('click', ()=>{
+    // open email in content (don't re-render list selected flag until after)
+    emails.forEach(x=>x.selected=false);
+    email.selected = true;
+    email.read = true; // mark read on open
+    selectedEmailId = email.id;
+    render();
+    // try to scroll selected into view on full list
+    setTimeout(()=>{ row.scrollIntoView({behavior:'smooth',block:'nearest'}); }, 60);
+  });
+
+  return row;
+}
+
+/* Render content pane */
+function renderContent(email){
+  // header controls
+  contentEl.innerHTML = '';
+  const top = document.createElement('div');
+  top.style.display='flex';
+  top.style.justifyContent='space-between';
+  top.style.alignItems='center';
+  top.style.marginBottom='8px';
+
+  const left = document.createElement('div');
+  left.innerHTML = `<button class="btn ghost" id="backBtn">← Back</button>`;
+  const right = document.createElement('div');
+  right.className='center';
+  right.innerHTML = `<button class="btn unread-toggle" id="toggleRead">${email.read? 'Mark Unread' : 'Mark Read'}</button>
+                     <button class="btn ghost" id="moveTrash">Move to Trash</button>`;
+
+  top.appendChild(left);
+  top.appendChild(right);
+
+  // content header
+  const title = document.createElement('div');
+  title.className = 'email-title';
+  title.textContent = email.subject;
+
+  const meta = document.createElement('div');
+  meta.className = 'email-meta';
+  meta.innerHTML = `<strong>${escapeHtml(email.sender)}</strong> &nbsp; • &nbsp; <span class="muted">${email.date}</span>`;
+
+  const body = document.createElement('div');
+  body.className = 'email-text';
+  body.textContent = email.body;
+
+  const atts = document.createElement('div');
+  atts.className = 'attachments';
+  (email.attachments || []).forEach(a=>{
+    const ext = (a.match(/\.[0-9A-Za-z]+$/)||[''])[0];
+    const el = document.createElement('div');
+    el.className = 'att';
+    el.innerHTML = `${fileIcon(ext)}<span>${escapeHtml(a)}</span>`;
+    atts.appendChild(el);
+  });
+
+  contentEl.appendChild(top);
+  contentEl.appendChild(title);
+  contentEl.appendChild(meta);
+  contentEl.appendChild(body);
+  if((email.attachments||[]).length) contentEl.appendChild(atts);
+
+  // Back button handler: clear selection but keep list
+  document.getElementById('backBtn').addEventListener('click', ()=>{
+    // deselect current
+    emails.forEach(x=>x.selected=false);
+    selectedEmailId = null;
+    render();
+  });
+
+  // toggle read/unread
+  document.getElementById('toggleRead').addEventListener('click', ()=>{
+    email.read = !email.read;
+    render(); // re-render will update badge/dot
+  });
+
+  // move to trash
+  document.getElementById('moveTrash').addEventListener('click', ()=>{
+    email.folder = 'trash';
+    selectedEmailId = null;
+    render();
+  });
+}
+
+/* small utility: initials */
+function getInitials(name){
+  if(!name) return 'U';
+  const parts = name.trim().split(/\s+/);
+  if(parts.length===1) return parts[0].slice(0,2).toUpperCase();
+  return (parts[0][0]+parts[1][0]).toUpperCase();
+}
+
+/* escape HTML */
+function escapeHtml(s){
+  return String(s)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;');
+}
+
+/* inline file SVG rendered as HTML string */
+function fileIcon(ext){
+  // ext could be '.pdf' or '.jpg' or ''
+  ext = (ext || '').toLowerCase();
+  if(ext.includes('.jpg')||ext.includes('.png')||ext.includes('.gif')||ext.includes('.svg')||ext.includes('.jpeg')){
+    return `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 3h14l4 4v11a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" stroke="#9fc9ff" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 14l3-4 4 5" stroke="#9fc9ff" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  }
+  return `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="4" width="12" height="16" rx="2" stroke="#9fc9ff" stroke-width="1.2"/><path d="M7 8h6" stroke="#9fc9ff" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+}
+
+/* initial render */
+render();
+
+</script>
+</body>
+</html>
