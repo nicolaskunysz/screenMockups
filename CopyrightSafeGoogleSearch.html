@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Copyright-Free Search</title>
+<style>
+* { box-sizing: border-box; }
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  min-height: 100vh;
+  background: #000;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+}
+#bg-image {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  object-fit: cover;
+  width: 100%;
+  height: 100%;
+  filter: brightness(0.45) blur(2px);
+  transition: opacity 1s ease-in-out;
+  opacity: 0;
+}
+header {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 60px 20px 10px;
+}
+#search-box {
+  width: 100%;
+  max-width: 600px;
+  position: relative;
+}
+#search-input {
+  width: 100%;
+  padding: 12px 40px 12px 16px;
+  font-size: 18px;
+  border-radius: 40px;
+  border: 1px solid rgba(255,255,255,0.3);
+  background: rgba(0,0,0,0.3);
+  color: #fff;
+  outline: none;
+}
+#search-input::placeholder { color: rgba(255,255,255,0.6); }
+#search-btn {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 20px;
+  color: #fff;
+  cursor: pointer;
+  user-select: none;
+  background: none;
+  padding: 0;
+}
+#search-btn:hover { color: #ccc; }
+
+#tabs {
+  display: flex;
+  justify-content: center;
+  margin: 10px 0 20px;
+  flex-wrap: wrap;
+  gap: 10px;
+  z-index: 2;
+  position: relative;
+}
+.tab {
+  padding: 8px 16px;
+  cursor: pointer;
+  border-radius: 20px;
+  background: rgba(255,255,255,0.15);
+  color: #fff;
+  transition: background 0.3s;
+  font-size: 14px;
+  font-weight: 500;
+}
+.tab.active {
+  background: #fff;
+  color: #000;
+}
+
+#spinner {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border: 5px solid rgba(255,255,255,0.2);
+  border-top: 5px solid #fff;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  animation: spin 1s linear infinite;
+  display: none;
+  z-index: 10;
+}
+@keyframes spin { from { transform: rotate(0deg);} to { transform: rotate(360deg);} }
+
+main {
+  flex: 1;
+  padding: 0 20px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+.result-grid {
+  display: grid;
+  gap: 15px;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+}
+.result-card {
+  background: rgba(255,255,255,0.1);
+  border-radius: 8px;
+  transition: transform 0.2s, box-shadow 0.3s;
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+.result-card:hover { transform: scale(1.05); box-shadow: 0 0 20px rgba(255,255,255,0.3); }
+
+.result-caption {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 6px 8px;
+  background: rgba(0,0,0,0.6);
+  font-size: 12px;
+  color: #fff;
+  text-align: center;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.result-card:hover .result-caption { opacity: 1; }
+
+.result-card img, .result-card video {
+  width: 100%;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+.result-card a { margin-top: 6px; color: #7fdfff; text-decoration: none; font-weight: bold; font-size: 14px; }
+.result-card a:hover { text-decoration: underline; }
+.result-source, .result-snippet { font-size: 12px; color: #ccc; }
+
+#lightbox {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.9);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+  flex-direction: column;
+  padding: 20px;
+}
+#lightbox-content {
+  max-width: 90%;
+  max-height: 80%;
+  text-align: center;
+  position: relative;
+}
+#lightbox-content img, #lightbox-content video {
+  max-width: 100%;
+  max-height: 70vh;
+  border-radius: 6px;
+}
+#lightbox-info {
+  margin-top: 10px;
+  color: #fff;
+  text-align: center;
+}
+#lightbox-close, #lightbox-prev, #lightbox-next {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 36px;
+  cursor: pointer;
+  color: #fff;
+  user-select: none;
+  padding: 10px;
+  background: rgba(0,0,0,0.4);
+  border-radius: 50%;
+}
+#lightbox-close { top: 20px; right: 30px; transform: none; }
+#lightbox-prev { left: 20px; }
+#lightbox-next { right: 20px; }
+
+@media (max-width:600px){
+  header { padding-top: 80px; }
+  #search-input { font-size: 16px; }
+  #search-btn { font-size: 18px; }
+}
+</style>
+</head>
+<body>
+
+<img id="bg-image" src="" alt="Background">
+<div id="spinner"></div>
+
+<header>
+  <div id="search-box">
+    <input type="text" id="search-input" placeholder="Search">
+    <span id="search-btn">&#128269;</span>
+  </div>
+</header>
+
+<div id="tabs">
+  <div class="tab active" data-type="all">All</div>
+  <div class="tab" data-type="images">Images</div>
+  <div class="tab" data-type="videos">Videos</div>
+  <div class="tab" data-type="more">More</div>
+</div>
+
+<main id="results-grid"></main>
+
+<div id="lightbox">
+  <span id="lightbox-close">&times;</span>
+  <span id="lightbox-prev">&#10094;</span>
+  <span id="lightbox-next">&#10095;</span>
+  <div id="lightbox-content"></div>
+  <div id="lightbox-info"></div>
+</div>
+
+<script>
+let allResults=[], currentFilter='all', currentMedia=[], currentIndex=0;
+
+async function randomBackground(){
+  const fallback=["https://upload.wikimedia.org/wikipedia/commons/3/3f/Fronalpstock_big.jpg","https://upload.wikimedia.org/wikipedia/commons/6/60/Beach_in_Brighton.jpg","https://upload.wikimedia.org/wikipedia/commons/e/e0/Galaxy_Milky_Way.jpg"];
+  const bg=document.getElementById("bg-image");
+  try{
+    const query=["nature","sky","ocean","forest","art","architecture","galaxy"];
+    const rand=query[Math.floor(Math.random()*query.length)];
+    const url=`https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*&generator=search&gsrsearch=${rand}&gsrlimit=30&gsrnamespace=6&prop=imageinfo&iiprop=url`;
+    const res=await fetch(url);
+    const data=await res.json();
+    if(data.query && data.query.pages){
+      const pages=Object.values(data.query.pages).filter(p=>p.imageinfo && p.imageinfo[0] && p.imageinfo[0].url);
+      const rImg=pages.length>0?pages[Math.floor(Math.random()*pages.length)]:null;
+      bg.src=rImg?rImg.imageinfo[0].url:fallback[Math.floor(Math.random()*fallback.length)];
+    }else{ bg.src=fallback[Math.floor(Math.random()*fallback.length)]; }
+    bg.style.opacity=1;
+  }catch(e){ console.error(e); bg.src=fallback[Math.floor(Math.random()*fallback.length)]; bg.style.opacity=1;}
+}
+
+async function fetchWikimedia(query){
+  const url=`https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*&generator=search&gsrsearch=${encodeURIComponent(query)}&gsrlimit=15&gsrnamespace=6&prop=imageinfo&iiprop=url`;
+  try{
+    const res=await fetch(url); const data=await res.json(); const results=[];
+    if(data.query && data.query.pages){ Object.values(data.query.pages).forEach(page=>{if(page.imageinfo && page.imageinfo[0] && page.imageinfo[0].url){results.push({title:page.title,link:page.imageinfo[0].url,snippet:"Wikimedia Commons Image",source:"Wikimedia Commons",type:"images",thumbnail:page.imageinfo[0].url});}});}
+    return results;
+  }catch(e){console.error(e);return [];}
+}
+
+async function fetchInternetArchive(query){
+  const url=`https://archive.org/advancedsearch.php?q=${encodeURIComponent(query)}&fl[]=identifier,title,mediatype,description,thumbnail&output=json&rows=15`;
+  try{
+    const res=await fetch(url); const data=await res.json(); const results=[];
+    if(data.response && data.response.docs){ data.response.docs.forEach(d=>{if(d.mediatype==='movies'||d.mediatype==='video'){results.push({title:d.title||d.identifier,link:`https://archive.org/details/${d.identifier}`,identifier:d.identifier,snippet:d.description?d.description[0]:"No description",source:"Internet Archive",type:"videos",thumbnail:d.thumbnail||`https://archive.org/services/img/${d.identifier}`});}});}
+    return results;
+  }catch(e){console.error(e);return [];}
+}
+
+async function fetchGutenberg(query){
+  return [{title:`Search for "${query}" on Project Gutenberg`,link:`https://www.gutenberg.org/ebooks/search/?query=${encodeURIComponent(query)}`,snippet:"Books in the public domain",source:"Project Gutenberg",type:"more",thumbnail:null}];
+}
+
+function displayResults(results){
+  const grid=document.getElementById("results-grid"); grid.innerHTML="";
+  if(results.length===0){ grid.innerHTML=`<div id="no-results">No results found.</div>`; return; }
+  const container=document.createElement("div");
+  if(currentFilter==='all'){ results.forEach(r=>{const div=document.createElement("div"); div.classList.add("result-card"); div.innerHTML=`<a href="${r.link}" target="_blank">${r.title}</a><div class="result-source">${r.source}</div><div class="result-snippet">${r.snippet}</div>`; container.appendChild(div);});}
+  else{
+    container.className='result-grid'; currentMedia=results.filter(r=>r.type===currentFilter);
+    currentMedia.forEach((r,i)=>{const div=document.createElement("div"); div.classList.add("result-card"); div.dataset.index=i; div.innerHTML=`<img src="${r.thumbnail}" alt="${r.title}" data-type="${r.type}" data-identifier="${r.identifier||''}" /><div class="result-caption">${r.title}</div><a href="${r.link}" target="_blank">${r.title}</a><div class="result-source">${r.source}</div><div class="result-snippet">${r.snippet}</div>`; container.appendChild(div);});
+    container.querySelectorAll("img[data-type]").forEach((el,i)=>{el.addEventListener("click",()=>{currentIndex=i;showLightbox();});});
+  }
+  grid.appendChild(container);
+}
+
+const lightbox=document.getElementById("lightbox"), lightboxContent=document.getElementById("lightbox-content"), lightboxInfo=document.getElementById("lightbox-info"), lightboxClose=document.getElementById("lightbox-close"), lightboxPrev=document.getElementById("lightbox-prev"), lightboxNext=document.getElementById("lightbox-next");
+
+function showLightbox(){
+  const r=currentMedia[currentIndex]; lightboxContent.innerHTML='';
+  if(r.type==='images'){const img=document.createElement('img'); img.src=r.thumbnail; lightboxContent.appendChild(img);}
+  else if(r.type==='videos'){const video=document.createElement('video'); video.controls=true; video.autoplay=true; if(r.identifier) video.src=`https://archive.org/download/${r.identifier}/${r.identifier}_512kb.mp4`; else video.src=r.link; lightboxContent.appendChild(video);}
+  lightboxInfo.innerHTML=`<strong>${r.title}</strong><br>${r.source}<br>${r.snippet}`; lightbox.style.display='flex';
+}
+
+lightboxClose.addEventListener("click",()=>lightbox.style.display='none');
+lightboxPrev.addEventListener("click",()=>{currentIndex=(currentIndex-1+currentMedia.length)%currentMedia.length; showLightbox();});
+lightboxNext.addEventListener("click",()=>{currentIndex=(currentIndex+1)%currentMedia.length; showLightbox();});
+lightbox.addEventListener("click",e=>{if(e.target===lightbox) lightbox.style.display='none';});
+
+function filterResults(type){currentFilter=type; const filtered=type==='all'?allResults:allResults.filter(r=>r.type===type); displayResults(filtered);}
+async function handleSearch(){const query=document.getElementById("search-input").value.trim(); if(!query) return; document.getElementById("spinner").style.display='block'; const [images,videos,more]=await Promise.all([fetchWikimedia(query),fetchInternetArchive(query),fetchGutenberg(query)]); allResults=[...images,...videos,...more]; document.getElementById("spinner").style.display='none'; filterResults(currentFilter);}
+
+document.getElementById("search-input").addEventListener("keypress",e=>{if(e.key==="Enter") handleSearch();});
+document.getElementById("search-btn").addEventListener("click",handleSearch);
+document.querySelectorAll(".tab").forEach(tab=>{tab.addEventListener("click",()=>{document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active")); tab.classList.add("active"); filterResults(tab.dataset.type);});});
+
+randomBackground();
+</script>
+</body>
+</html>
