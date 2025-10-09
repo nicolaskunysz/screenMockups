@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Phone Call Mockup</title>
+<style>
+html, body {
+  margin:0; padding:0;
+  height:100%;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  background:#000;
+  font-family: Arial, sans-serif;
+}
+
+/* Home interface */
+#interface {
+  display:flex; flex-direction:column; gap:15px;
+  background:#1e1e1e; padding:20px; border-radius:10px;
+  width:90%; max-width:350px;
+}
+#interface input, #interface select, #interface button {
+  padding:10px; font-size:16px; border-radius:5px; border:1px solid #444; width:100%; box-sizing:border-box;
+  background:#2c2c2c; color:#fff;
+}
+button{cursor:pointer;}
+button.primary{background:#007aff;color:#fff;border:none;}
+button.primary:hover{background:#0051a8;}
+button.red{background:#ff3b30;color:#fff;border:none;}
+button.red:hover{background:#aa1f1f;}
+button.secondary{background:#555;color:#fff;border:none;}
+button.secondary:hover{background:#333;}
+
+/* Device frame */
+#deviceFrame {
+  overflow:hidden;
+  display:none;
+  box-shadow: 0 0 20px rgba(0,0,0,0.5);
+  max-width:90vw;
+  max-height:90vh;
+}
+
+/* Apple / Android dark mode */
+.device-apple { width:375px; height:812px; border-radius:50px; background:#1c1c1e; font-family: -apple-system, BlinkMacSystemFont, "San Francisco", Helvetica, Arial, sans-serif; color:#fff; }
+.device-android { width:360px; height:740px; border-radius:40px; background:#121212; font-family: Roboto, "Noto Sans", Arial, sans-serif; color:#fff; }
+
+/* Call screen inside device */
+#callScreen {
+  width:100%;
+  height:100%;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  padding:20px;
+  text-align:center;
+}
+#avatarImg { width:120px; height:120px; border-radius:50%; object-fit:cover; margin-bottom:20px;}
+#callScreen h1{font-size:2em;margin:10px 0; word-break: break-word;}
+#callScreen p{font-size:1.2em;margin:10px 0;}
+#callTimer{font-size:1.2em;margin-top:10px;}
+
+/* Two rows for call buttons */
+#callControlsTop {
+  display:flex; gap:15px; justify-content:center; margin-top:20px; flex-wrap:wrap;
+}
+#callControlsTop button{flex:1; min-width:120px; max-width:150px; padding:15px 0; font-size:16px; border-radius:50px;}
+#callControlsBottom{margin-top:20px;}
+#callControlsBottom button{padding:20px 40px; font-size:20px; border-radius:50px; min-width:160px;}
+</style>
+</head>
+<body>
+
+<!-- Home screen -->
+<div id="interface">
+  <input type="text" id="contactName" placeholder="Enter Contact Name">
+  <select id="callType">
+    <option value="incoming">Incoming Call</option>
+    <option value="outgoing">Outgoing Call</option>
+  </select>
+  <select id="deviceSelect">
+    <option value="apple">Apple Phone</option>
+    <option value="android">Android Phone</option>
+  </select>
+  <input type="file" id="avatarInput" accept="image/*">
+  <button class="primary" id="playCall">Play Call</button>
+</div>
+
+<!-- Device frame -->
+<div id="deviceFrame">
+  <div id="callScreen">
+    <img id="avatarImg" style="display:none;" alt="Contact Avatar">
+    <h1 id="contactDisplay"></h1>
+    <p id="statusText">Calling...</p>
+    <div id="callTimer">00:00</div>
+    <div id="callControlsTop"></div>
+    <div id="callControlsBottom"></div>
+  </div>
+</div>
+
+<audio id="ringtone" loop>
+  <source src="https://actions.google.com/sounds/v1/alarms/phone_alerts.ogg" type="audio/ogg">
+</audio>
+
+<script>
+const interfaceDiv = document.getElementById('interface');
+const playBtn = document.getElementById('playCall');
+const callScreen = document.getElementById('callScreen');
+const deviceFrame = document.getElementById('deviceFrame');
+const contactDisplay = document.getElementById('contactDisplay');
+const statusText = document.getElementById('statusText');
+const callTimerEl = document.getElementById('callTimer');
+const callControlsTop = document.getElementById('callControlsTop');
+const callControlsBottom = document.getElementById('callControlsBottom');
+const avatarInput = document.getElementById('avatarInput');
+const avatarImg = document.getElementById('avatarImg');
+const deviceSelect = document.getElementById('deviceSelect');
+const ringtone = document.getElementById('ringtone');
+
+let timerInterval = null;
+let seconds = 0;
+
+function formatTime(sec){
+  const m = Math.floor(sec/60).toString().padStart(2,'0');
+  const s = (sec%60).toString().padStart(2,'0');
+  return `${m}:${s}`;
+}
+
+function startTimer(){
+  clearInterval(timerInterval);
+  timerInterval = setInterval(()=>{
+    seconds++;
+    callTimerEl.textContent = formatTime(seconds);
+  },1000);
+}
+
+function resetCall(){
+  clearInterval(timerInterval);
+  callControlsTop.innerHTML='';
+  callControlsBottom.innerHTML='';
+  avatarImg.style.display='none';
+  avatarImg.src = '';
+  seconds=0;
+  callTimerEl.textContent="00:00";
+  statusText.textContent="Calling...";
+  interfaceDiv.style.display='flex';
+  deviceFrame.style.display='none';
+  ringtone.pause();
+  ringtone.currentTime = 0;
+
+  // Exit fullscreen if active
+  if(document.fullscreenElement){
+    document.exitFullscreen().catch(()=>{});
+  }
+}
+
+function addCallControls(){
+  const speakerBtn = document.createElement('button');
+  speakerBtn.className='secondary';
+  speakerBtn.textContent='Speaker';
+  speakerBtn.onclick = ()=>alert("Speaker toggled (mockup)");
+
+  const muteBtn = document.createElement('button');
+  muteBtn.className='secondary';
+  muteBtn.textContent='Mute';
+  muteBtn.onclick = ()=>alert("Mute toggled (mockup)");
+
+  callControlsTop.appendChild(speakerBtn);
+  callControlsTop.appendChild(muteBtn);
+
+  const endBtn = document.createElement('button');
+  endBtn.className='red';
+  endBtn.textContent='End Call';
+  endBtn.onclick = resetCall;
+  callControlsBottom.appendChild(endBtn);
+}
+
+playBtn.addEventListener('click',()=>{
+  const name = document.getElementById('contactName').value.trim()||"Unknown";
+  const type = document.getElementById('callType').value;
+  const device = deviceSelect.value;
+
+  deviceFrame.className = `device-${device}`;
+  deviceFrame.style.display = 'block';
+  interfaceDiv.style.display='none';
+
+  contactDisplay.textContent = name;
+  statusText.textContent="Calling...";
+  callControlsTop.innerHTML='';
+  callControlsBottom.innerHTML='';
+
+  const file = avatarInput.files[0];
+  if(file){
+    const reader = new FileReader();
+    reader.onload = e => {
+      avatarImg.src = e.target.result;
+      avatarImg.style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+  } else {
+    avatarImg.style.display='none';
+    avatarImg.src='';
+  }
+
+  if(type==="incoming"){
+    ringtone.play();
+    const acceptBtn = document.createElement('button');
+    acceptBtn.className='primary';
+    acceptBtn.textContent='Accept';
+    acceptBtn.onclick = () => {
+      ringtone.pause();
+      ringtone.currentTime = 0;
+      statusText.textContent="In Call";
+      startTimer();
+      callControlsTop.innerHTML='';
+      callControlsBottom.innerHTML='';
+      addCallControls();
+    };
+    const refuseBtn = document.createElement('button');
+    refuseBtn.className='red';
+    refuseBtn.textContent='Refuse';
+    refuseBtn.onclick = resetCall;
+    callControlsTop.appendChild(acceptBtn);
+    callControlsTop.appendChild(refuseBtn);
+  } else {
+    const cancelBtn = document.createElement('button');
+    cancelBtn.className='red';
+    cancelBtn.textContent='Cancel';
+    cancelBtn.onclick = resetCall;
+    callControlsBottom.appendChild(cancelBtn);
+  }
+
+  // Optional: request fullscreen on mobile
+  if(deviceFrame.requestFullscreen){
+    deviceFrame.requestFullscreen().catch(()=>{});
+  }
+});
+</script>
+</body>
+</html>
