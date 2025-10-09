@@ -1,0 +1,211 @@
+<!--
+Bræðraborg Cloud Storage
+Easily replace image paths later by updating the `imagePaths` array below.
+Each item corresponds to a file thumbnail and large image.
+-->
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Bræðraborg Cloud</title>
+  <style>
+    :root{
+      --bg:#f5f7fb; --card:#fff; --muted:#6b7280; --accent:#2563eb; --sidebar:#0f1724;
+    }
+    html,body{height:100%;margin:0;font-family:Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;color:#0b1220;background:linear-gradient(180deg,var(--bg),#eef3fb);}
+    .app{display:grid;grid-template-columns:260px 1fr;gap:24px;height:100vh;padding:20px;box-sizing:border-box}
+
+    .sidebar{background:linear-gradient(180deg,var(--sidebar),#071024);color:#fff;padding:20px;border-radius:14px;display:flex;flex-direction:column;gap:18px}
+    .brand{display:flex;align-items:center;gap:12px}
+    .brand .logo{width:44px;height:44px;border-radius:8px;background:linear-gradient(135deg,#60a5fa,#7c3aed);display:flex;align-items:center;justify-content:center;font-weight:700}
+    .nav{display:flex;flex-direction:column;gap:8px}
+    .nav button{background:transparent;border:0;color:inherit;padding:10px;border-radius:8px;text-align:left;cursor:pointer}
+    .nav button:hover{background:rgba(255,255,255,0.04)}
+
+    .space{flex:1}
+    .account{display:flex;align-items:center;gap:12px}
+    .avatar{width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,#f97316,#ef4444)}
+
+    .main{display:flex;flex-direction:column;gap:12px}
+    .topbar{display:flex;align-items:center;gap:12px;justify-content:space-between}
+    .search{display:flex;align-items:center;gap:8px;background:var(--card);padding:8px 12px;border-radius:10px;box-shadow:0 1px 0 rgba(16,24,40,0.02)}
+    .search input{border:0;outline:0;background:transparent;font-size:14px}
+    .controls{display:flex;align-items:center;gap:8px}
+    .btn{background:var(--accent);color:#fff;border:0;padding:10px 12px;border-radius:8px;cursor:pointer}
+    .ghost{background:transparent;border:1px solid rgba(11,18,32,0.06);padding:8px 10px;border-radius:8px}
+
+    .breadcrumb{color:var(--muted);font-size:13px}
+
+    .grid-wrap{flex:1;overflow:auto;padding:8px;border-radius:12px}
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:18px;padding:20px}
+    .file{background:var(--card);border-radius:12px;overflow:hidden;box-shadow:0 6px 18px rgba(11,18,32,0.06);transition:transform 0.15s,box-shadow 0.15s;border:1px solid rgba(11,18,32,0.03)}
+    .thumb{width:100%;height:200px;display:block;object-fit:cover;background:linear-gradient(180deg,#eef2ff,#fff)}
+    .meta{padding:12px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+    .meta .title{font-size:14px;font-weight:600;color:#071124}
+    .meta .sub{font-size:12px;color:var(--muted)}
+
+    .file:hover{transform:translateY(-6px);box-shadow:0 20px 40px rgba(11,18,32,0.08)}
+
+    .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(3,7,18,0.5);z-index:60}
+    .modal.open{display:flex}
+    .modal .box{background:#fff;padding:18px;border-radius:12px;max-width:900px;width:calc(100% - 48px);max-height:90vh;overflow:auto}
+    .modal img{max-width:100%;height:auto;border-radius:8px;display:block}
+
+    @media(min-width:1200px){
+      .grid{grid-template-columns:repeat(auto-fill,minmax(200px,1fr));}
+      .thumb{height:200px}
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="logo">BB</div>
+        <div>
+          <div style="font-weight:700">Bræðraborg</div>
+          <div style="font-size:13px;opacity:0.85">Cloud Storage</div>
+        </div>
+      </div>
+      <nav class="nav">
+        <button>All Files</button>
+        <button>Projects</button>
+        <button>Shared</button>
+        <button>Trash</button>
+      </nav>
+
+      <div class="space"></div>
+      <div class="account">
+        <div class="avatar"></div>
+        <div>
+          <div style="font-weight:700">User</div>
+          <div class="muted" style="font-size:13px">user@braedraborg.is</div>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="topbar">
+        <div style="display:flex;align-items:center;gap:12px">
+          <div class="breadcrumb">My Drive / Properties / Listings</div>
+        </div>
+        <div class="controls">
+          <div class="search">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style="opacity:0.6"><path d="M21 21l-4.35-4.35" stroke="#111827" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"></path><circle cx="11" cy="11" r="6" stroke="#111827" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"></circle></svg>
+            <input id="q" placeholder="Search files or seed #" />
+          </div>
+          <select id="sort" class="ghost">
+            <option value="seed">Sort: Seed</option>
+            <option value="new">Sort: New → Old</option>
+            <option value="old">Sort: Old → New</option>
+          </select>
+          <button id="upload" class="btn">Upload</button>
+        </div>
+      </div>
+
+      <div class="grid-wrap">
+        <div id="grid" class="grid" aria-live="polite"></div>
+      </div>
+    </main>
+  </div>
+
+  <div id="modal" class="modal" role="dialog" aria-hidden="true">
+    <div class="box">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div id="modalTitle" style="font-weight:700">Preview</div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <a id="downloadLink" class="ghost" download>Download</a>
+          <button id="closeModal" class="ghost">Close</button>
+        </div>
+      </div>
+      <div style="margin-top:12px"><img id="modalImg" src="" alt=""></div>
+    </div>
+  </div>
+
+  <script>
+    const COUNT = 80;
+    const grid = document.getElementById('grid');
+    const modal = document.getElementById('modal');
+    const modalImg = document.getElementById('modalImg');
+    const modalTitle = document.getElementById('modalTitle');
+    const downloadLink = document.getElementById('downloadLink');
+    const q = document.getElementById('q');
+    const sort = document.getElementById('sort');
+
+    // You can replace these paths later with your own image URLs.
+    // Example: imagePaths[0] = { thumb: 'thumbnails/house1.jpg', large: 'images/house1_large.jpg' }
+    const imagePaths = Array.from({ length: COUNT }, (_, i) => ({
+      thumb: `https://picsum.photos/seed/bb-${i+1}/200`,
+      large: `https://picsum.photos/seed/bb-${i+1}/1200/800`
+    }));
+
+    const items = imagePaths.map((img, i) => ({
+      id: i + 1,
+      seed: 'bb-' + (i + 1),
+      thumb: img.thumb,
+      large: img.large,
+      name: `IMG_${String(i+1).padStart(3,'0')}.jpg`,
+      date: Date.now() - (i+1)*1000*60*60
+    }));
+
+    function render(list){
+      grid.innerHTML='';
+      for(const it of list){
+        const div = document.createElement('div');
+        div.className='file';
+        div.innerHTML = `
+          <img loading="lazy" width="200" height="200" class="thumb" src="${it.thumb}" alt="${it.name}" data-id="${it.id}">
+          <div class="meta">
+            <div>
+              <div class="title">${it.name}</div>
+              <div class="sub muted">Seed: ${it.seed}</div>
+            </div>
+            <div class="flex"><button class="ghost" data-id="${it.id}">⋯</button></div>
+          </div>
+        `;
+        div.querySelector('.thumb').addEventListener('click',()=>openPreview(it));
+        grid.appendChild(div);
+      }
+    }
+
+    function openPreview(it){
+      modalImg.src = it.large;
+      modalImg.alt = it.name;
+      modalTitle.textContent = it.name + ' — Preview';
+      downloadLink.href = it.large;
+      modal.classList.add('open');
+      modal.setAttribute('aria-hidden','false');
+    }
+
+    document.getElementById('closeModal').addEventListener('click',closeModal);
+    modal.addEventListener('click', (e)=>{ if(e.target===modal) closeModal(); });
+    function closeModal(){ modal.classList.remove('open'); modal.setAttribute('aria-hidden','true'); modalImg.src=''; }
+
+    q.addEventListener('input',()=>applyFilters());
+    sort.addEventListener('change',()=>applyFilters());
+
+    function applyFilters(){
+      const qv = q.value.trim().toLowerCase();
+      let out = items.slice();
+      if(qv){
+        out = out.filter(i=>i.name.toLowerCase().includes(qv) || i.seed.toLowerCase().includes(qv) || String(i.id)===qv);
+      }
+      const ord = sort.value;
+      if(ord==='new') out.sort((a,b)=>b.date-a.date);
+      if(ord==='old') out.sort((a,b)=>a.date-b.date);
+      render(out);
+    }
+
+    render(items);
+
+    document.getElementById('upload').addEventListener('click',()=>{
+      alert('Upload dialog simulated for demonstration.');
+    });
+
+    document.addEventListener('keydown',e=>{ if(e.key==='/' && document.activeElement!==q){ e.preventDefault(); q.focus(); }});
+    document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeModal(); });
+  </script>
+</body>
+</html>
