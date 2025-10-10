@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="is">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lögregla — RMS / CAD</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+html,body{margin:0;height:100%;font-family:Verdana,Arial,sans-serif;background:#061426;color:#e6eef6;}
+.app{display:grid;grid-template-columns:360px 1fr 420px;gap:18px;padding:18px;height:100vh;}
+.panel{display:flex;flex-direction:column;background:rgba(11,18,32,0.9);border-radius:12px;padding:14px;box-shadow:0 6px 18px rgba(2,6,23,0.6);backdrop-filter: blur(6px);}
+.brand{display:flex;gap:10px;align-items:center;margin-bottom:8px;}
+.logo{width:44px;height:44px;border-radius:8px;background:linear-gradient(135deg,#1e90ff,#6ecbff);display:flex;align-items:center;justify-content:center;font-weight:700;color:#02243b;}
+h1{font-size:14px;margin:0;font-weight:bold;}
+.input{width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:rgba(255,255,255,0.03);color:#9aa7b2;}
+.btn{display:inline-block;padding:8px 12px;border-radius:8px;background:linear-gradient(180deg,#1e90ff,#2aa0ff);color:#012235;font-weight:600;border:none;cursor:pointer;transition:transform 0.1s,background 0.2s;margin-top:5px;}
+.btn:hover{transform:translateY(-1px);background:linear-gradient(180deg,#2aa0ff,#1b80f0);}
+.btn:active{background:linear-gradient(180deg,#4aff7b,#1fdc57);transform:scale(0.97);}
+.incident-list{margin-top:10px;overflow:auto;flex:1;padding-right:6px;}
+.incident{display:flex;gap:10px;align-items:flex-start;padding:10px;border-radius:8px;margin-bottom:8px;border-left:4px solid transparent;transition: transform 0.1s, background 0.2s, opacity 0.5s;cursor:pointer;}
+.incident.low{border-left-color:#6be3a7;}
+.incident.med{border-left-color:#ffb86b;}
+.incident.high{border-left-color:#ff6b6b;}
+.incident:hover{transform:scale(1.02);background:rgba(255,255,255,0.1);}
+#map{height:50vh;border-radius:10px;position:relative;}
+.controls{display:flex;gap:8px;align-items:center;padding:8px 0;}
+.tabs{display:flex;gap:8px;margin-bottom:10px;}
+.tab{padding:8px 10px;border-radius:8px;background: rgba(0,0,0,0.12); cursor:pointer; font-weight:bold;}
+.tab.active{background:linear-gradient(180deg,#07243a,#083b48);}
+.tabContent{display:none;flex-direction:column;overflow:auto;max-height:calc(100vh - 200px);}
+.tabContent.active{display:flex;}
+.field{margin-bottom:8px;}
+label{display:block;font-size:12px;color:#9aa7b2;margin-bottom:4px;font-weight:bold;}
+input,textarea,select{width:100%;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit;}
+textarea{min-height:100px;}
+#trafficBanner{
+  position:fixed;
+  bottom:0;
+  left:0;
+  width:100%;
+  background:rgba(2,6,23,0.95);
+  color:#ffffff;
+  font-weight:bold;
+  font-size:14px;
+  overflow:hidden;
+  white-space:nowrap;
+  height:28px;
+  display:flex;
+  align-items:center;
+  padding-left:100%;
+  box-shadow:0 -3px 6px rgba(0,0,0,0.5);
+}
+#trafficContent{
+  display:inline-block;
+  padding-right:100%;
+  animation:scroll 25s linear infinite;
+}
+@keyframes scroll{
+  0%{transform:translateX(0);}
+  100%{transform:translateX(-100%);}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="panel">
+    <div class="brand"><div class="logo">LR</div><div><h1 id="title">Lögregla — Neyðarsendir (CAD)</h1></div></div>
+    <input class="input" id="manualIncident" placeholder="Skrá atvik handvirkt" />
+    <button class="btn" id="addManualBtn">Skrá</button>
+    <button class="btn" id="toggleLang">EN</button>
+    <div class="incident-list" id="incidentList"></div>
+  </div>
+  <div class="panel">
+    <div id="map"></div>
+    <div class="controls">
+      <button class="btn" id="centerBtn">Miðja kort</button>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="tabs">
+      <div class="tab active" data-tab="summary">Yfirlit</div>
+      <div class="tab" data-tab="people">Aðilar</div>
+      <div class="tab" data-tab="evidence">Sönnunargögn</div>
+      <div class="tab" data-tab="timeline">Tímalína</div>
+    </div>
+    <div class="tabContent active" id="summary">
+      <div class="field"><label>Atviksnúmer</label><input id="caseId" readonly /></div>
+      <div class="field"><label>Tegund</label><input id="caseType" /></div>
+      <div class="field"><label>Staðsetning</label><input id="caseLocation" /></div>
+      <div class="field"><label>Lýsing</label><textarea id="caseNarrative"></textarea></div>
+      <div class="field"><label>Staða</label><input id="caseStatus" /></div>
+    </div>
+    <div class="tabContent" id="people"><ul id="peopleList"></ul></div>
+    <div class="tabContent" id="evidence"><ul id="evidenceList"></ul></div>
+    <div class="tabContent" id="timeline"><ul id="timelineList"></ul></div>
+  </div>
+</div>
+
+<div id="trafficBanner">
+  <div id="trafficContent"></div>
+</div>
+
+<script>
+const map=L.map('map').setView([64.1466,-21.9426],12);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
+
+let mockIncidents=[];
+let isEnglish=false;
+
+document.getElementById('toggleLang').onclick=()=>{isEnglish=!isEnglish; document.getElementById('addManualBtn').textContent=isEnglish?'Add':'Skrá';};
+document.querySelectorAll('.tab').forEach(tab=>{tab.addEventListener('click',()=>{document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active')); tab.classList.add('active'); document.querySelectorAll('.tabContent').forEach(tc=>tc.classList.remove('active')); document.getElementById(tab.dataset.tab).classList.add('active');});});
+
+const firstNames=['Jón','Ólafur','Guðrún','Sigríður','Anna','Einar','Kristín','Sigurður','Björn','Margrét'];
+const lastNames=['Jónsson','Ólafsdóttir','Guðmundsson','Sigurðardóttir','Kristjánsdóttir','Einarsson'];
+const incidentTypes=['Árás','Þjófnaður','Grunsamlegt','Umferð'];
+const addresses=[{street:"Laugavegur",number:"10",lat:64.1447,lon:-21.9306},{street:"Hverfisgata",number:"50",lat:64.1458,lon:-21.9309},{street:"Skólavörðustígur",number:"20",lat:64.1445,lon:-21.9360},{street:"Bankastræti",number:"5",lat:64.1462,lon:-21.9390},{street:"Austurstræti",number:"17",lat:64.1470,lon:-21.9395},{street:"Suðurgata",number:"30",lat:64.1385,lon:-21.9495},{street:"Snorrabraut",number:"56",lat:64.1420,lon:-21.9244}];
+const statuses=['Í vinnslu','Lokið','Í bið'];
+let trafficStatuses=["Þrengsli í Laugavegi","Frjáls umferð á Snorrabraut","Bílaröð á Hverfisgötu","Umferð stöðvuð á Austurstræti","Hröð umferð á Bankastræti","Umferðarljós biluð við Suðurgötu","Þrengsli í Skólavörðustíg","Viðgerðir á Nesvegi - seinkun"];
+
+function random(arr){return arr[Math.floor(Math.random()*arr.length)];}
+function randomName(){return random(firstNames)+' '+random(lastNames);}
+function randomCaseType(){return random(incidentTypes);}
+function randomPriority(){return ['low','med','high'][Math.floor(Math.random()*3)];}
+function getRandomAddress(){return random(addresses);}
+function randomNarrative(type,name,loc){return `${name} er tilkynnt í tengslum við ${type} á ${loc}`;}
+
+function createIncidentData(manualText){
+  const addr=getRandomAddress();
+  const name=randomName(), type=randomCaseType(), priority=randomPriority();
+  return {id:'INC'+Math.floor(Math.random()*9000+1000),type,name,priority,narrative:manualText||randomNarrative(type,name,addr.street+' '+addr.number),location:addr.street+' '+addr.number,lat:addr.lat,lon:addr.lon,status:'Í vinnslu',people:[name,'Vitni: '+randomName()],evidence:['Myndbandsupptaka','Fótspor','Símaskrá'],timeline:['Atvik tilkynnt kl. '+new Date().toLocaleTimeString(),'Eining send á vettvang','Skýrsla tekin upp'],marker:null,divElement:null};
+}
+
+function updateRMS(incident){
+  document.getElementById('caseId').value=incident.id;
+  document.getElementById('caseType').value=incident.type;
+  document.getElementById('caseLocation').value=incident.location;
+  document.getElementById('caseNarrative').value=incident.narrative;
+  document.getElementById('caseStatus').value=incident.status;
+  const peopleList=document.getElementById('peopleList'); peopleList.innerHTML=''; incident.people.forEach(p=>{const li=document.createElement('li');li.textContent=p;peopleList.appendChild(li);});
+  const evidenceList=document.getElementById('evidenceList'); evidenceList.innerHTML=''; incident.evidence.forEach(e=>{const li=document.createElement('li');li.textContent=e; evidenceList.appendChild(li);});
+  const timelineList=document.getElementById('timelineList'); timelineList.innerHTML=''; incident.timeline.forEach(t=>{const li=document.createElement('li');li.textContent=t; timelineList.appendChild(li);});
+}
+
+function addIncident(manualText){
+  const inc=createIncidentData(manualText);
+  const marker=L.marker([inc.lat,inc.lon]).addTo(map).bindPopup(`<b>${inc.type}</b><br>${inc.location}<br>${inc.name}`);
+  inc.marker=marker;
+  mockIncidents.unshift(inc);
+  renderIncidents();
+  updateRMS(inc);
+  setTimeout(()=>{inc.status='Lokið'; renderIncidents();},10000+Math.random()*10000);
+}
+
+function renderIncidents(){
+  const incidentListEl=document.getElementById('incidentList');
+  incidentListEl.innerHTML='';
+  mockIncidents.forEach((inc,index)=>{
+    if(inc.status==='Lokið' && inc.divElement){
+      inc.divElement.style.opacity='0';
+      if(inc.marker) map.removeLayer(inc.marker);
+      setTimeout(()=>{mockIncidents.splice(index,1); renderIncidents();},500);
+    } else if(inc.status!=='Lokið'){
+      const div=document.createElement('div');
+      div.className='incident '+inc.priority;
+      div.textContent=`[${inc.type}] ${inc.location} (${inc.status})`;
+      div.onclick=()=>{map.setView([inc.lat,inc.lon],15); updateRMS(inc);};
+      inc.divElement=div;
+      incidentListEl.appendChild(div);
+    }
+  });
+}
+
+document.getElementById('addManualBtn').onclick=()=>{addIncident(document.getElementById('manualIncident').value);document.getElementById('manualIncident').value='';};
+document.getElementById('centerBtn').onclick=()=>map.setView([64.1466,-21.9426],12);
+setInterval(()=>addIncident(),5000);
+
+// Traffic banner functions
+function randomTraffic(){return trafficStatuses.sort(()=>Math.random()-0.5);}
+function updateTrafficBanner(){
+  const content=document.getElementById('trafficContent');
+  const statuses=randomTraffic();
+  content.textContent=statuses.map(s=>`[${new Date().toLocaleTimeString()}] ${s}`).join(" — ");
+}
+updateTrafficBanner();
+setInterval(updateTrafficBanner,15000);
+</script>
+</body>
+</html>
