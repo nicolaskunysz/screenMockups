@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="is">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lögregla — RMS / CAD Sýndarforrit</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+html, body { margin:0; height:100%; font-family: Inter, Arial, sans-serif; background: linear-gradient(180deg,#071028 0%, #061426 100%); color:#e6eef6; }
+.app { display:grid; grid-template-columns:360px 1fr 420px; gap:18px; padding:18px; height:100vh; }
+.panel { display:flex; flex-direction:column; background: rgba(11,18,32,0.9); border-radius:12px; padding:14px; box-shadow:0 6px 18px rgba(2,6,23,0.6); backdrop-filter: blur(6px); }
+.brand { display:flex; gap:10px; align-items:center; margin-bottom:8px; }
+.logo { width:44px; height:44px; border-radius:8px; background: linear-gradient(135deg,#1e90ff,#6ecbff); display:flex; align-items:center; justify-content:center; font-weight:700; color:#02243b; }
+h1 { font-size:14px; margin:0; font-weight:bold; }
+.input { width:100%; padding:10px; border-radius:8px; border:1px solid rgba(255,255,255,0.04); background: rgba(255,255,255,0.03); color:#9aa7b2; }
+.btn { display:inline-block; padding:8px 12px; border-radius:8px; background: linear-gradient(180deg,#1e90ff,#2aa0ff); color:#012235; font-weight:600; border:none; cursor:pointer; transition: transform 0.1s, background 0.2s; margin-top:5px; }
+.btn:hover { transform: translateY(-1px); background: linear-gradient(180deg,#2aa0ff,#1b80f0); }
+.btn:active { background: linear-gradient(180deg,#4aff7b,#1fdc57); transform: scale(0.97); }
+.incident-list { margin-top:10px; overflow:auto; flex:1; padding-right:6px; }
+.incident { display:flex; gap:10px; align-items:flex-start; padding:10px; border-radius:8px; margin-bottom:8px; border-left:4px solid transparent; transition: transform 0.1s, background 0.2s; cursor:pointer; }
+.incident.low { border-left-color:#6be3a7; }
+.incident.med { border-left-color:#ffb86b; }
+.incident.high { border-left-color:#ff6b6b; }
+.incident:hover { transform: scale(1.02); background: rgba(255,255,255,0.1); }
+#map { height:50vh; border-radius:10px; position:relative; }
+.controls { display:flex; gap:8px; align-items:center; padding:8px 0; }
+.tabs { display:flex; gap:8px; margin-bottom:10px; }
+.tab { padding:8px 10px; border-radius:8px; background: rgba(0,0,0,0.12); cursor:pointer; font-weight:bold; }
+.tab.active { background: linear-gradient(180deg,#07243a,#083b48); }
+.tabContent { display:none; flex-direction:column; }
+.tabContent.active { display:flex; }
+.field { margin-bottom:8px; }
+label { display:block; font-size:12px; color:#9aa7b2; margin-bottom:4px; font-weight:bold; }
+input, textarea, select { width:100%; padding:8px; border-radius:8px; border:1px solid rgba(255,255,255,0.04); background: transparent; color:inherit; }
+textarea { min-height:100px; }
+.event-popup { position:absolute; top:10px; right:10px; padding:8px 14px; border-radius:8px; font-weight:700; opacity:0; transition: opacity 0.5s, transform 0.5s; pointer-events:none; z-index:1000; }
+.event-popup.low { background:#6be3a7; color:#012235; }
+.event-popup.med { background:#ffb86b; color:#012235; }
+.event-popup.high { background:#ff6b6b; color:#fff; }
+.map-popup { background:#ff6b6b; color:#fff; font-weight:bold; padding:6px 10px; border-radius:8px; }
+</style>
+</head>
+<body>
+<div class="event-popup" id="eventPopup">Nýtt atvik!</div>
+<div class="app">
+  <div class="panel">
+    <div class="brand"><div class="logo">LR</div><div><h1 id="title">Lögregla — Neyðarsendir (CAD)</h1></div></div>
+    <input class="input" id="manualIncident" placeholder="Skrá atvik handvirkt" />
+    <button class="btn" id="addManualBtn">Skrá</button>
+    <button class="btn" id="toggleLang">EN</button>
+    <div class="incident-list" id="incidentList"></div>
+  </div>
+  <div class="panel">
+    <div id="map"></div>
+    <div class="controls">
+      <button class="btn" id="centerBtn">Miðja kort</button>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="tabs">
+      <div class="tab active" data-tab="summary">Yfirlit</div>
+      <div class="tab" data-tab="people">Aðilar</div>
+      <div class="tab" data-tab="evidence">Sönnunargögn</div>
+      <div class="tab" data-tab="timeline">Tímalína</div>
+    </div>
+    <div class="tabContent active" id="summary">
+      <div class="field"><label>Atviksnúmer</label><input id="caseId" readonly /></div>
+      <div class="field"><label>Tegund</label><input id="caseType" /></div>
+      <div class="field"><label>Staðsetning</label><input id="caseLocation" /></div>
+      <div class="field"><label>Lýsing</label><textarea id="caseNarrative"></textarea></div>
+      <div class="field"><label>Staða</label><input id="caseStatus" /></div>
+    </div>
+    <div class="tabContent" id="people"><ul id="peopleList"></ul></div>
+    <div class="tabContent" id="evidence"><ul id="evidenceList"></ul></div>
+    <div class="tabContent" id="timeline"><ul id="timelineList"></ul></div>
+  </div>
+</div>
+<script>
+const map = L.map('map').setView([64.1466, -21.9426], 13);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom:19}).addTo(map);
+
+const streetAddresses = [
+  {name:'Laugavegur 1',lat:64.1466,lon:-21.9426},
+  {name:'Skólavörðustígur 10',lat:64.1480,lon:-21.9410},
+  {name:'Austurstræti 5',lat:64.1450,lon:-21.9400},
+  {name:'Hverfisgata 12',lat:64.1475,lon:-21.9440},
+  {name:'Bankastræti 7',lat:64.1460,lon:-21.9460},
+  {name:'Smiðjustígur 3',lat:64.1435,lon:-21.9425},
+  {name:'Tryggvagata 8',lat:64.1490,lon:-21.9435},
+  {name:'Frakkastígur 15',lat:64.1445,lon:-21.9450},
+  {name:'Vonarstræti 2',lat:64.1470,lon:-21.9405},
+  {name:'Ingólfsstræti 20',lat:64.1455,lon:-21.9415},
+  {name:'Túngata 25',lat:64.1485,lon:-21.9445}
+];
+
+const incidentTypes=['Árás','Þjófnaður','Grunsamlegt','Umferð'];
+let mockIncidents=[], mapMarkers=[];
+const incidentList=document.getElementById('incidentList');
+const eventPopup=document.getElementById('eventPopup');
+let isEnglish=false;
+const langDict={is:{add:'Skrá',incident:'Nýtt atvik!'},en:{add:'Add',incident:'New incident!'}};
+
+// Language toggle
+document.getElementById('toggleLang').onclick = () => {
+  isEnglish = !isEnglish;
+  document.getElementById('addManualBtn').textContent = langDict[isEnglish ? 'en':'is'].add;
+};
+
+// Tabs
+document.querySelectorAll('.tab').forEach(tab => tab.addEventListener('click', () => {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  tab.classList.add('active');
+  document.querySelectorAll('.tabContent').forEach(tc => tc.classList.remove('active'));
+  document.getElementById(tab.dataset.tab).classList.add('active');
+}));
+
+function showPopup(msg,priority){
+  eventPopup.textContent=msg;
+  eventPopup.className='event-popup show '+priority;
+  setTimeout(()=>eventPopup.className='event-popup',2500);
+}
+
+function randomAddress(){ return streetAddresses[Math.floor(Math.random()*streetAddresses.length)]; }
+
+function renderIncidents(){
+  incidentList.innerHTML='';
+  mockIncidents.forEach((inc,i)=>{
+    const div=document.createElement('div');
+    div.className='incident '+inc.priority;
+    div.textContent=`${inc.type} @ ${inc.location}`;
+    div.onclick=()=>openCase(i);
+    incidentList.appendChild(div);
+  });
+}
+
+function openCase(idx){
+  const inc=mockIncidents[idx];
+  document.getElementById('caseId').value=inc.id;
+  document.getElementById('caseType').value=inc.type;
+  document.getElementById('caseLocation').value=inc.location;
+  document.getElementById('caseNarrative').value=inc.desc;
+  document.getElementById('caseStatus').value=inc.status;
+}
+
+function addIncident(type){
+  const loc=randomAddress();
+  const priority=['low','med','high'][Math.floor(Math.random()*3)];
+  const id=Date.now();
+  const inc={id,type,location:loc.name,priority,desc:type+' á '+loc.name,status:'Í vinnslu'};
+  mockIncidents.push(inc);
+  const marker=L.marker([loc.lat,loc.lon]).addTo(map).bindPopup(inc.type+' @ '+loc.name);
+  mapMarkers.push(marker);
+  renderIncidents();
+  showPopup(langDict[isEnglish?'en':'is'].incident,priority);
+
+  // Auto-resolve after random 5-10 sec
+  setTimeout(()=>{
+    const index=mockIncidents.findIndex(x=>x.id===inc.id);
+    if(index>-1){
+      mockIncidents.splice(index,1);
+      map.removeLayer(marker);
+      renderIncidents();
+    }
+  },5000+Math.random()*5000);
+}
+
+// Simulate random incidents every 3-6 sec
+setInterval(()=>addIncident(incidentTypes[Math.floor(Math.random()*incidentTypes.length)]),3000+Math.random()*3000);
+
+// Manual incident
+document.getElementById('addManualBtn').onclick=()=>{
+  const val=document.getElementById('manualIncident').value;
+  if(val) { addIncident(val); document.getElementById('manualIncident').value=''; }
+}
+
+// Center map button
+document.getElementById('centerBtn').onclick=()=>map.setView([64.1466, -21.9426],13);
+
+</script>
+</body>
+</html>
