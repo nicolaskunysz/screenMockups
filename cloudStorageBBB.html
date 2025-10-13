@@ -124,9 +124,14 @@ const folders = ['temp','bin','R3F7','03'];
 const imagesPerFolder = COUNT / folders.length;
 
 const items = Array.from({length: COUNT}, (_, i) => ({
-name: `IMG_${String(i+1).padStart(3,'0')}.jpg`,
-thumb: `POLIGHT/thumbnails/IMG_${String(i+1).padStart(3,'0')}.jpg`,
-large: `POLIGHT/IMG_${String(i+1).padStart(3,'0')}.jpg`,
+function getFileNumber(i) {
+  if (i < 9) return `00${i+1}`;       // 0 → 1 → 001
+  else return `0${i+1}`;               // 9 → 10 → 0010, 10 → 11 → 0011, etc.
+}
+
+name: `IMG_${getFileNumber(i)}.jpg`,
+thumb: `POLIGHT/thumbnails/IMG_${getFileNumber(i)}.jpg`,
+large: `POLIGHT/IMG_${getFileNumber(i)}.jpg`,
 folder: folders[Math.floor(i / imagesPerFolder)]
 }));
 
