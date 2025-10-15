@@ -37,7 +37,7 @@ html, body {
   height: 100%;
   backdrop-filter: blur(8px);
   background: rgba(255,255,255,0.3);
-  display: flex;
+  display: flex; /* visible at start */
   align-items: center;
   justify-content: center;
   z-index: 10;
@@ -100,7 +100,7 @@ function animateArticle(toClear) {
   overlay.style.display = 'flex';
   shimmer.style.display = 'block';
 
-  const duration = 1000; // faster: 1 second
+  const duration = toClear ? 400 : 300; // fast unblur 0.4s, reblur 0.3s
   const startTime = performance.now();
   const startBlur = toClear ? 15 : 0;
   const endBlur = toClear ? 0 : 15;
@@ -113,8 +113,7 @@ function animateArticle(toClear) {
     let t = (time - startTime) / duration;
     if (t > 1) t = 1;
 
-    // Apply small random jitter to blur
-    const jitter = toClear ? Math.random() * 2 - 1 : 0; // ±1px during reveal
+    const jitter = toClear ? (Math.random() * 1.5 - 0.75) : 0; // ±0.75px jitter during reveal
     const blur = startBlur + (endBlur - startBlur) * t + jitter;
     const opacity = startOpacity + (endOpacity - startOpacity) * t;
     const y = startY + (endY - startY) * t;
@@ -126,7 +125,6 @@ function animateArticle(toClear) {
     if (t < 1) {
       requestAnimationFrame(step);
     } else {
-      // animation finished
       article.style.filter = `blur(${endBlur}px)`;
       article.style.opacity = endOpacity;
       article.style.transform = `translateY(${endY}px)`;
