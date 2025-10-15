@@ -37,7 +37,7 @@ html, body {
   height: 100%;
   backdrop-filter: blur(8px);
   background: rgba(255,255,255,0.3);
-  display: flex; /* visible on load */
+  display: flex;
   align-items: center;
   justify-content: center;
   z-index: 10;
@@ -66,7 +66,7 @@ html, body {
   background: linear-gradient(120deg, rgba(255,255,255,0) 30%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0) 70%);
   animation: shimmer 1.2s infinite;
   pointer-events: none;
-  display: block; /* visible on load */
+  display: block;
 }
 
 @keyframes shimmer {
@@ -93,57 +93,51 @@ const shimmer = document.getElementById('shimmer');
 let isClear = false;
 let animating = false;
 
-// Add a tiny random blur jitter for realism
+// Tiny blur jitter during reveal
 function applyJitter() {
-  if (isClear || !animating) return;
-  const jitter = (Math.random() * 1.5 - 0.75); // ±0.75px
-  const baseBlur = article.classList.contains('clear') ? 0 : 15;
-  article.style.filter = `blur(${baseBlur + jitter}px)`;
+  if (!animating || isClear) return;
+  const jitter = Math.random() * 1.5 - 0.75; // ±0.75px
+  article.style.filter = `blur(${jitter}px)`;
   requestAnimationFrame(applyJitter);
 }
 
-function toggleArticle() {
-  if (animating) return;
-  animating = true;
-
+function resetToInitial() {
+  // Show overlay + shimmer
   overlay.style.display = 'flex';
   shimmer.style.display = 'block';
-
-  if (!isClear) {
-    // Reveal
-    article.classList.add('clear');
-    requestAnimationFrame(applyJitter); // start jitter
-    setTimeout(() => {
-      article.style.filter = 'blur(0)';
-      article.style.opacity = '1';
-      article.style.transform = 'translateY(0)';
-    }, 50);
-
-    setTimeout(() => {
-      overlay.style.display = 'none';
-      shimmer.style.display = 'none';
-      isClear = true;
-      animating = false;
-    }, 400); // fast 0.35-0.4s reveal
-  } else {
-    // Reblur
-    article.classList.remove('clear');
-    setTimeout(() => {
-      article.style.filter = 'blur(15px)';
-      article.style.opacity = '0.6';
-      article.style.transform = 'translateY(-30px)';
-    }, 50);
-
-    setTimeout(() => {
-      overlay.style.display = 'none';
-      shimmer.style.display = 'none';
-      isClear = false;
-      animating = false;
-    }, 350); // fast reblur
-  }
+  article.style.filter = 'blur(15px)';
+  article.style.opacity = '0.6';
+  article.style.transform = 'translateY(-30px)';
 }
 
-document.addEventListener('keydown', toggleArticle);
+function revealArticle() {
+  animating = true;
+  overlay.style.display = 'flex';
+  shimmer.style.display = 'block';
+  requestAnimationFrame(applyJitter);
+
+  setTimeout(() => {
+    article.style.filter = 'blur(0)';
+    article.style.opacity = '1';
+    article.style.transform = 'translateY(0)';
+  }, 50);
+
+  setTimeout(() => {
+    overlay.style.display = 'none';
+    shimmer.style.display = 'none';
+    isClear = true;
+    animating = false;
+  }, 400);
+}
+
+document.addEventListener('keydown', () => {
+  if (!isClear) {
+    revealArticle();
+  } else {
+    resetToInitial();
+    isClear = false;
+  }
+});
 </script>
 
 </body>
