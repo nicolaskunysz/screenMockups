@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fréttir - Spegillinn</title>
+<style>
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: Arial, sans-serif;
+  background: #fff;
+  overflow-x: hidden;
+}
+
+.container {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  overflow: auto;
+}
+
+.article {
+  width: 100%;
+  display: block;
+  filter: blur(15px);
+  opacity: 0.6;
+  transform: translateY(-30px);
+  transition: filter 0.35s ease, opacity 0.35s ease, transform 0.35s ease;
+}
+
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  backdrop-filter: blur(8px);
+  background: rgba(255,255,255,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+.spinner {
+  border: 6px solid rgba(0,0,0,0.1);
+  border-top: 6px solid #333;
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.shimmer {
+  position: absolute;
+  top: 0;
+  left: -150%;
+  width: 150%;
+  height: 100%;
+  background: linear-gradient(120deg, rgba(255,255,255,0) 30%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0) 70%);
+  animation: shimmer 1.2s infinite;
+  pointer-events: none;
+  display: block;
+}
+
+@keyframes shimmer {
+  0% { left: -150%; }
+  100% { left: 150%; }
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <img src="NEWS-ARTICLE-ABOUT-ELISABET-on-computer-screen-WEB.png" alt="News article" class="article" id="article">
+  <div class="shimmer" id="shimmer"></div>
+  <div class="overlay" id="overlay">
+    <div class="spinner"></div>
+  </div>
+</div>
+
+<script>
+const article = document.getElementById('article');
+const overlay = document.getElementById('overlay');
+const shimmer = document.getElementById('shimmer');
+
+let isClear = false;
+let animating = false;
+
+// Tiny blur jitter during reveal
+function applyJitter() {
+  if (!animating || isClear) return;
+  const jitter = Math.random() * 1.5 - 0.75; // ±0.75px
+  article.style.filter = `blur(${jitter}px)`;
+  requestAnimationFrame(applyJitter);
+}
+
+function resetToInitial() {
+  // Show overlay + shimmer
+  overlay.style.display = 'flex';
+  shimmer.style.display = 'block';
+  article.style.filter = 'blur(15px)';
+  article.style.opacity = '0.6';
+  article.style.transform = 'translateY(-30px)';
+}
+
+function revealArticle() {
+  animating = true;
+  overlay.style.display = 'flex';
+  shimmer.style.display = 'block';
+  requestAnimationFrame(applyJitter);
+
+  setTimeout(() => {
+    article.style.filter = 'blur(0)';
+    article.style.opacity = '1';
+    article.style.transform = 'translateY(0)';
+  }, 50);
+
+  setTimeout(() => {
+    overlay.style.display = 'none';
+    shimmer.style.display = 'none';
+    isClear = true;
+    animating = false;
+  }, 400);
+}
+
+document.addEventListener('keydown', () => {
+  if (!isClear) {
+    revealArticle();
+  } else {
+    resetToInitial();
+    isClear = false;
+  }
+});
+</script>
+
+</body>
+</html>
