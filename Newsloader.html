@@ -26,7 +26,7 @@
       display: block;
       filter: blur(15px);
       opacity: 0.6;
-      transition: filter 0.5s ease, opacity 0.5s ease;
+      transition: filter 0.3s ease, opacity 0.3s ease;
       position: relative;
     }
 
@@ -81,12 +81,6 @@
       100% { left: 150%; }
     }
 
-    /* Clear state */
-    .clear {
-      filter: blur(0) !important;
-      opacity: 1 !important;
-    }
-
     /* Animating refresh */
     @keyframes dynamicReveal {
       0% { filter: blur(15px); opacity: 0.6; }
@@ -117,38 +111,27 @@
 
     let isClear = false;
 
-    function playRefreshAnimation() {
-      // show overlay and shimmer
-      overlay.classList.add('active');
-      shimmer.style.display = 'block';
-
-      // apply dynamic reveal animation
-      article.style.animation = 'dynamicReveal 3s forwards';
-
-      // remove overlay and shimmer after 3s
-      setTimeout(() => {
-        overlay.classList.remove('active');
-        shimmer.style.display = 'none';
-        article.style.animation = '';
-        article.classList.add('clear');
-      }, 3000);
-    }
-
-    function resetRefresh() {
-      // reset blur + overlay for re-toggle
-      article.classList.remove('clear');
-      article.style.filter = 'blur(15px)';
-      article.style.opacity = 0.6;
-      overlay.classList.add('active');
-      shimmer.style.display = 'block';
-    }
-
     document.addEventListener('keydown', () => {
       if (!isClear) {
-        playRefreshAnimation();
-        isClear = true;
+        // Play dynamic reveal
+        overlay.classList.add('active');
+        shimmer.style.display = 'block';
+        article.style.animation = 'dynamicReveal 3s forwards';
+
+        setTimeout(() => {
+          overlay.classList.remove('active');
+          shimmer.style.display = 'none';
+          article.style.animation = '';
+          article.style.filter = 'blur(0)';
+          article.style.opacity = 1;
+          isClear = true;
+        }, 3000);
       } else {
-        resetRefresh();
+        // Reapply initial blur + spinner + shimmer
+        article.style.filter = 'blur(15px)';
+        article.style.opacity = 0.6;
+        overlay.classList.add('active');
+        shimmer.style.display = 'block';
         isClear = false;
       }
     });
