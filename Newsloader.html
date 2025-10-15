@@ -26,7 +26,7 @@ html, body {
   filter: blur(15px);
   opacity: 0.6;
   transform: translateY(-30px);
-  transition: none;
+  transition: filter 0.35s ease, opacity 0.35s ease, transform 0.35s ease;
 }
 
 .overlay {
@@ -37,7 +37,7 @@ html, body {
   height: 100%;
   backdrop-filter: blur(8px);
   background: rgba(255,255,255,0.3);
-  display: flex; /* visible at start */
+  display: flex; /* visible on load */
   align-items: center;
   justify-content: center;
   z-index: 10;
@@ -66,7 +66,7 @@ html, body {
   background: linear-gradient(120deg, rgba(255,255,255,0) 30%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0) 70%);
   animation: shimmer 1.2s infinite;
   pointer-events: none;
-  display: block;
+  display: block; /* visible on load */
 }
 
 @keyframes shimmer {
@@ -93,54 +93,57 @@ const shimmer = document.getElementById('shimmer');
 let isClear = false;
 let animating = false;
 
-function animateArticle(toClear) {
+// Add a tiny random blur jitter for realism
+function applyJitter() {
+  if (isClear || !animating) return;
+  const jitter = (Math.random() * 1.5 - 0.75); // ±0.75px
+  const baseBlur = article.classList.contains('clear') ? 0 : 15;
+  article.style.filter = `blur(${baseBlur + jitter}px)`;
+  requestAnimationFrame(applyJitter);
+}
+
+function toggleArticle() {
   if (animating) return;
   animating = true;
 
   overlay.style.display = 'flex';
   shimmer.style.display = 'block';
 
-  const duration = toClear ? 400 : 300; // fast unblur 0.4s, reblur 0.3s
-  const startTime = performance.now();
-  const startBlur = toClear ? 15 : 0;
-  const endBlur = toClear ? 0 : 15;
-  const startOpacity = toClear ? 0.6 : 1;
-  const endOpacity = toClear ? 1 : 0.6;
-  const startY = toClear ? -30 : 0;
-  const endY = toClear ? 0 : -30;
+  if (!isClear) {
+    // Reveal
+    article.classList.add('clear');
+    requestAnimationFrame(applyJitter); // start jitter
+    setTimeout(() => {
+      article.style.filter = 'blur(0)';
+      article.style.opacity = '1';
+      article.style.transform = 'translateY(0)';
+    }, 50);
 
-  function step(time) {
-    let t = (time - startTime) / duration;
-    if (t > 1) t = 1;
-
-    const jitter = toClear ? (Math.random() * 1.5 - 0.75) : 0; // ±0.75px jitter during reveal
-    const blur = startBlur + (endBlur - startBlur) * t + jitter;
-    const opacity = startOpacity + (endOpacity - startOpacity) * t;
-    const y = startY + (endY - startY) * t;
-
-    article.style.filter = `blur(${blur}px)`;
-    article.style.opacity = opacity;
-    article.style.transform = `translateY(${y}px)`;
-
-    if (t < 1) {
-      requestAnimationFrame(step);
-    } else {
-      article.style.filter = `blur(${endBlur}px)`;
-      article.style.opacity = endOpacity;
-      article.style.transform = `translateY(${endY}px)`;
+    setTimeout(() => {
       overlay.style.display = 'none';
       shimmer.style.display = 'none';
-      isClear = toClear;
+      isClear = true;
       animating = false;
-    }
-  }
+    }, 400); // fast 0.35-0.4s reveal
+  } else {
+    // Reblur
+    article.classList.remove('clear');
+    setTimeout(() => {
+      article.style.filter = 'blur(15px)';
+      article.style.opacity = '0.6';
+      article.style.transform = 'translateY(-30px)';
+    }, 50);
 
-  requestAnimationFrame(step);
+    setTimeout(() => {
+      overlay.style.display = 'none';
+      shimmer.style.display = 'none';
+      isClear = false;
+      animating = false;
+    }, 350); // fast reblur
+  }
 }
 
-document.addEventListener('keydown', () => {
-  animateArticle(!isClear);
-});
+document.addEventListener('keydown', toggleArticle);
 </script>
 
 </body>
