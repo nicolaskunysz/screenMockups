@@ -37,7 +37,7 @@ html, body {
   height: 100%;
   backdrop-filter: blur(8px);
   background: rgba(255,255,255,0.3);
-  display: flex; /* start visible */
+  display: flex;
   align-items: center;
   justify-content: center;
   z-index: 10;
@@ -66,7 +66,7 @@ html, body {
   background: linear-gradient(120deg, rgba(255,255,255,0) 30%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0) 70%);
   animation: shimmer 1.2s infinite;
   pointer-events: none;
-  display: block; /* start visible */
+  display: block;
 }
 
 @keyframes shimmer {
@@ -100,7 +100,7 @@ function animateArticle(toClear) {
   overlay.style.display = 'flex';
   shimmer.style.display = 'block';
 
-  const duration = 3000;
+  const duration = 1000; // faster: 1 second
   const startTime = performance.now();
   const startBlur = toClear ? 15 : 0;
   const endBlur = toClear ? 0 : 15;
@@ -113,7 +113,9 @@ function animateArticle(toClear) {
     let t = (time - startTime) / duration;
     if (t > 1) t = 1;
 
-    const blur = startBlur + (endBlur - startBlur) * t;
+    // Apply small random jitter to blur
+    const jitter = toClear ? Math.random() * 2 - 1 : 0; // ±1px during reveal
+    const blur = startBlur + (endBlur - startBlur) * t + jitter;
     const opacity = startOpacity + (endOpacity - startOpacity) * t;
     const y = startY + (endY - startY) * t;
 
@@ -124,6 +126,7 @@ function animateArticle(toClear) {
     if (t < 1) {
       requestAnimationFrame(step);
     } else {
+      // animation finished
       article.style.filter = `blur(${endBlur}px)`;
       article.style.opacity = endOpacity;
       article.style.transform = `translateY(${endY}px)`;
@@ -137,7 +140,6 @@ function animateArticle(toClear) {
   requestAnimationFrame(step);
 }
 
-// Allow toggle with any key
 document.addEventListener('keydown', () => {
   animateArticle(!isClear);
 });
