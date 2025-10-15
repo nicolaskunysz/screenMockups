@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fréttir - Spegillinn</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      background: #fff;
+      overflow-x: hidden;
+    }
+
+    .container {
+      position: relative;
+      width: 100%;
+      min-height: 100vh;
+      overflow: auto;
+    }
+
+    /* Article image */
+    .article {
+      width: 100%;
+      display: block;
+      filter: blur(15px);
+      opacity: 0.6;
+      transition: filter 0.5s ease, opacity 0.5s ease;
+      position: relative;
+    }
+
+    /* Spinner overlay */
+    .overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      backdrop-filter: blur(8px);
+      background: rgba(255, 255, 255, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    }
+
+    .overlay.active {
+      pointer-events: auto;
+    }
+
+    /* Spinner */
+    .spinner {
+      border: 6px solid rgba(0,0,0,0.1);
+      border-top: 6px solid #333;
+      border-radius: 50%;
+      width: 60px;
+      height: 60px;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    /* Shimmer effect */
+    .shimmer {
+      position: absolute;
+      top: 0;
+      left: -150%;
+      width: 150%;
+      height: 100%;
+      background: linear-gradient(120deg, rgba(255,255,255,0) 30%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0) 70%);
+      animation: shimmer 1.2s infinite;
+      pointer-events: none;
+    }
+
+    @keyframes shimmer {
+      0% { left: -150%; }
+      100% { left: 150%; }
+    }
+
+    /* Clear state */
+    .clear {
+      filter: blur(0) !important;
+      opacity: 1 !important;
+    }
+
+    /* Animating refresh */
+    @keyframes dynamicReveal {
+      0% { filter: blur(15px); opacity: 0.6; }
+      30% { filter: blur(12px); opacity: 0.7; }
+      60% { filter: blur(6px); opacity: 0.85; }
+      100% { filter: blur(0); opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <img
+      src="elisabet-news.png"
+      alt="News article"
+      class="article"
+      id="article"
+    />
+    <div class="shimmer" id="shimmer"></div>
+    <div class="overlay active" id="overlay">
+      <div class="spinner"></div>
+    </div>
+  </div>
+
+  <script>
+    const article = document.getElementById('article');
+    const overlay = document.getElementById('overlay');
+    const shimmer = document.getElementById('shimmer');
+
+    let isClear = false;
+
+    function playRefreshAnimation() {
+      // show overlay and shimmer
+      overlay.classList.add('active');
+      shimmer.style.display = 'block';
+
+      // apply dynamic reveal animation
+      article.style.animation = 'dynamicReveal 3s forwards';
+
+      // remove overlay and shimmer after 3s
+      setTimeout(() => {
+        overlay.classList.remove('active');
+        shimmer.style.display = 'none';
+        article.style.animation = '';
+        article.classList.add('clear');
+      }, 3000);
+    }
+
+    function resetRefresh() {
+      // reset blur + overlay for re-toggle
+      article.classList.remove('clear');
+      article.style.filter = 'blur(15px)';
+      article.style.opacity = 0.6;
+      overlay.classList.add('active');
+      shimmer.style.display = 'block';
+    }
+
+    document.addEventListener('keydown', () => {
+      if (!isClear) {
+        playRefreshAnimation();
+        isClear = true;
+      } else {
+        resetRefresh();
+        isClear = false;
+      }
+    });
+  </script>
+</body>
+</html>
