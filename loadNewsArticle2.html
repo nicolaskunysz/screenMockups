@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fréttir - Spegillinn</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #fff;
+      font-family: Arial, sans-serif;
+      overflow-x: hidden;
+    }
+
+    .container {
+      position: relative;
+      width: 100%;
+      min-height: 100vh;
+      overflow: auto;
+    }
+
+    /* Article image */
+    .article {
+      width: 100%;
+      display: block;
+      transition: filter 0.5s ease;
+      filter: blur(8px); /* initially blurred */
+      animation: pulseBlur 1.5s infinite alternate;
+    }
+
+    /* Spinner overlay */
+    .overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      backdrop-filter: blur(8px);
+      background: rgba(255, 255, 255, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Spinner */
+    .spinner {
+      border: 6px solid rgba(0,0,0,0.1);
+      border-top: 6px solid #333;
+      border-radius: 50%;
+      width: 60px;
+      height: 60px;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    /* Pulsing blur animation */
+    @keyframes pulseBlur {
+      0% { filter: blur(6px); }
+      50% { filter: blur(10px); }
+      100% { filter: blur(6px); }
+    }
+
+    /* Clear state */
+    .clear {
+      filter: none !important;
+      animation: none !important;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <img
+      src="https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&w=1950&q=80"
+      alt="News article"
+      class="article"
+      id="article"
+    />
+    <div class="overlay" id="overlay">
+      <div class="spinner"></div>
+    </div>
+  </div>
+
+  <script>
+    const article = document.getElementById('article');
+    const overlay = document.getElementById('overlay');
+
+    let isClear = false; // tracks current state
+
+    document.addEventListener('keydown', () => {
+      if (!isClear) {
+        // Reveal article
+        overlay.style.display = 'none';
+        article.classList.add('clear');
+        isClear = true;
+      } else {
+        // Reblur article
+        overlay.style.display = 'flex';
+        article.classList.remove('clear');
+        isClear = false;
+      }
+    });
+  </script>
+</body>
+</html>
