@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Fréttir - Spegillinn</title>
 <style>
 html, body {
@@ -26,6 +26,7 @@ html, body {
   filter: blur(15px);
   opacity: 0.6;
   transform: translateY(-30px);
+  transition: none;
 }
 
 .overlay {
@@ -35,14 +36,11 @@ html, body {
   width: 100%;
   height: 100%;
   backdrop-filter: blur(8px);
-  background: rgba(255, 255, 255, 0.3);
-  display: flex;
+  background: rgba(255,255,255,0.3);
+  display: flex; /* start visible */
   align-items: center;
   justify-content: center;
-}
-
-.overlay.active {
-  pointer-events: auto;
+  z-index: 10;
 }
 
 .spinner {
@@ -68,7 +66,9 @@ html, body {
   background: linear-gradient(120deg, rgba(255,255,255,0) 30%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0) 70%);
   animation: shimmer 1.2s infinite;
   pointer-events: none;
+  display: block; /* start visible */
 }
+
 @keyframes shimmer {
   0% { left: -150%; }
   100% { left: 150%; }
@@ -76,10 +76,11 @@ html, body {
 </style>
 </head>
 <body>
+
 <div class="container">
-  <img src="elisabet-news.png" alt="News article" class="article" id="article"/>
+  <img src="elisabet-news.png" alt="News article" class="article" id="article">
   <div class="shimmer" id="shimmer"></div>
-  <div class="overlay active" id="overlay">
+  <div class="overlay" id="overlay">
     <div class="spinner"></div>
   </div>
 </div>
@@ -92,23 +93,29 @@ const shimmer = document.getElementById('shimmer');
 let isClear = false;
 let animating = false;
 
-// animate blur, opacity, and slide
-function animateArticle(targetBlur, targetOpacity, targetY, duration=3000, callback) {
+function animateArticle(toClear) {
   if (animating) return;
   animating = true;
-  const startBlur = parseFloat(getComputedStyle(article).filter.match(/[\d.]+/)[0]) || 15;
-  const startOpacity = parseFloat(getComputedStyle(article).opacity) || 0.6;
-  const transformMatch = getComputedStyle(article).transform.match(/matrix\(.*,\s.*,\s.*,\s.*,\s.*,\s(-?\d+\.?\d*)\)/);
-  const startY = transformMatch ? parseFloat(transformMatch[1]) : -30;
-  const startTime = performance.now();
 
-  function step(now) {
-    let t = (now - startTime) / duration;
+  overlay.style.display = 'flex';
+  shimmer.style.display = 'block';
+
+  const duration = 3000;
+  const startTime = performance.now();
+  const startBlur = toClear ? 15 : 0;
+  const endBlur = toClear ? 0 : 15;
+  const startOpacity = toClear ? 0.6 : 1;
+  const endOpacity = toClear ? 1 : 0.6;
+  const startY = toClear ? -30 : 0;
+  const endY = toClear ? 0 : -30;
+
+  function step(time) {
+    let t = (time - startTime) / duration;
     if (t > 1) t = 1;
 
-    const blur = startBlur + (targetBlur - startBlur) * t;
-    const opacity = startOpacity + (targetOpacity - startOpacity) * t;
-    const y = startY + (targetY - startY) * t;
+    const blur = startBlur + (endBlur - startBlur) * t;
+    const opacity = startOpacity + (endOpacity - startOpacity) * t;
+    const y = startY + (endY - startY) * t;
 
     article.style.filter = `blur(${blur}px)`;
     article.style.opacity = opacity;
@@ -117,30 +124,24 @@ function animateArticle(targetBlur, targetOpacity, targetY, duration=3000, callb
     if (t < 1) {
       requestAnimationFrame(step);
     } else {
+      article.style.filter = `blur(${endBlur}px)`;
+      article.style.opacity = endOpacity;
+      article.style.transform = `translateY(${endY}px)`;
+      overlay.style.display = 'none';
+      shimmer.style.display = 'none';
+      isClear = toClear;
       animating = false;
-      if (callback) callback();
     }
   }
+
   requestAnimationFrame(step);
 }
 
+// Allow toggle with any key
 document.addEventListener('keydown', () => {
-  if (!isClear) {
-    overlay.classList.add('active');
-    shimmer.style.display = 'block';
-    animateArticle(0, 1, 0, 3000, () => {
-      overlay.classList.remove('active');
-      shimmer.style.display = 'none';
-      isClear = true;
-    });
-  } else {
-    overlay.classList.add('active');
-    shimmer.style.display = 'block';
-    animateArticle(15, 0.6, -30, 1000, () => {
-      isClear = false;
-    });
-  }
+  animateArticle(!isClear);
 });
 </script>
+
 </body>
 </html>
