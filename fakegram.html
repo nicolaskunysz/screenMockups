@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Pixi</title>
+<style>
+:root {
+  --bg:#fafafa; --card:#fff; --muted:#8e8e8e; --accent:#e1306c; --text:#111;
+}
+[data-theme="dark"] {
+  --bg:#121212; --card:#1e1e1e; --muted:#aaa; --accent:#e1306c; --text:#fff;
+}
+html,body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);}
+.container{max-width:600px;margin:18px auto;padding:0 12px 80px 12px}
+.post{background:var(--card);border-radius:12px;margin-bottom:18px;overflow:hidden;border:1px solid #eee}
+[data-theme="dark"] .post{border-color:#333;}
+.meta{display:flex;align-items:center;padding:12px}
+.avatar{width:42px;height:42px;border-radius:50%;flex:0 0 42px;overflow:hidden}
+.avatar img{width:100%;height:100%;object-fit:cover;display:block}
+.meta .user{margin-left:10px}
+.user .name{font-weight:600}
+.user .sub{font-size:12px;color:var(--muted)}
+.imgwrap{width:100%;height:auto;position:relative;background:#f4f4f4;aspect-ratio:1/1}
+.imgwrap img.post-img{width:100%;height:100%;object-fit:cover;display:block;filter:blur(10px);transition:filter .4s ease;}
+.imgwrap img.post-img.loaded{filter:blur(0);}
+.actions{display:flex;align-items:center;padding:10px 12px;gap:12px}
+.likes{font-weight:600}
+.caption{padding:0 12px 12px 12px;color:var(--text)}
+.caption .muted{color:var(--muted);font-size:13px}
+.loader{display:flex;justify-content:center;padding:24px;color:var(--muted)}
+.small{font-size:12px;color:var(--muted)}
+.bottom-bar{position:fixed;bottom:0;left:0;width:100%;background:var(--card);border-top:1px solid #ddd;height:60px;display:flex;justify-content:space-around;align-items:center;z-index:20}
+[data-theme="dark"] .bottom-bar{border-top-color:#333}
+.icon{font-size:24px;color:#333;cursor:pointer;transition:transform .1s}
+[data-theme="dark"] .icon{color:#fff}
+.icon:active{transform:scale(0.9)}
+/* Toggle container stacked vertically */
+.toggle-container{
+  position:fixed; top:12px; right:12px; display:flex; flex-direction:column; gap:8px; z-index:30;
+}
+.dark-toggle, .icelandic-toggle{
+  width:30px;height:16px;background:#ccc;border-radius:10px;cursor:pointer;display:flex;align-items:center;padding:2px;transition:background .3s;
+}
+[data-theme="dark"] .dark-toggle, [data-theme="dark"] .icelandic-toggle{background:#555;}
+.dark-toggle .circle, .icelandic-toggle .circle{width:12px;height:12px;background:white;border-radius:50%;transition:transform .3s;}
+[data-theme="dark"] .dark-toggle .circle{transform:translateX(14px);}
+[data-icelandic="on"] .icelandic-toggle .circle{transform:translateX(14px);}
+</style>
+</head>
+<body>
+<div class="toggle-container">
+  <div class="dark-toggle" id="darkToggle"><div class="circle"></div></div>
+  <div class="icelandic-toggle" id="icelandicToggle"><div class="circle"></div></div>
+</div>
+<main class="container" id="feed"></main>
+<div id="loader" class="loader">Loading…</div>
+<div class="bottom-bar">
+  <div class="icon">🏠</div>
+  <div class="icon">🔍</div>
+  <div class="icon">➕</div>
+  <div class="icon">❤️</div>
+  <div class="icon">👤</div>
+</div>
+<script>
+const feedEl=document.getElementById('feed');
+const loaderEl=document.getElementById('loader');
+const darkToggle=document.getElementById('darkToggle');
+const icelandicToggle=document.getElementById('icelandicToggle');
+let loading=false;
+let darkMode=localStorage.getItem('darkMode')==='true';
+let icelandicMode=localStorage.getItem('icelandicMode')==='true';
+if(darkMode) document.documentElement.setAttribute('data-theme','dark');
+if(icelandicMode) document.documentElement.setAttribute('data-icelandic','on');
+
+const locations=['Paris','Tokyo','New York','Barcelona','Berlin','Lisbon','Seoul','Copenhagen','London','Toronto','Sydney','Florence','Bangkok','Prague','Stockholm','Milan'];
+const emojis=['😊','🌿','☀️','🌸','🔥','💫','🌊','🌅','🌇','✨','🍃','🎞️','📸','💛','💬','🖤'];
+const hashtags=['#vibes','#travel','#citylife','#aesthetic','#mood','#photography','#sunset','#weekend','#explore','#wander','#daily','#moment','#streetstyle','#minimal','#random'];
+const adjectives=['amazing','serene','cozy','crazy','vibrant','peaceful','glowing','chilly','sunny','rainy','stormy','dreamy','golden','bright','mellow'];
+const verbs=['exploring','enjoying','chasing','capturing','finding','wandering','discovering','admiring','snapping','celebrating'];
+const objects=['moment','vibes','scene','view','day','light','sunset','streets','skyline','details','colors','mood'];
+
+// Icelandic arrays for fully natural captions
+const icelandicAdjectives=['dásamlegt','rólegt','notalegt','tryllt','líflegt','friðsamt','ljómandi','kalt','sólskins','rigning','stormasamt','draumkennt','gyllt','bjart','mjúkt'];
+const icelandicVerbs=['kanna','njóta','eltast við','taka mynd af','finna','rölta','uppgötva','dást að','smella','fagna'];
+const icelandicObjects=['andartak','stemning','sena','útsýni','dagur','ljós','sólsetur','götur','snið','smáatriði','liti','skapi'];
+const icelandicLocations=['Reykjavík','Akureyri','Keflavík','Egilsstaðir','Selfoss','Ísafjörður','Húsavík','Vík','Höfn','Grindavík'];
+const icelandicHashtags=['#stemning','#ferðalag','#borgarlíf','#listrænt','#skapi','#ljósmyndun','#sólsetur','#helgi','#kanna','#vandra','#daglegt','#andartak','#strigastíll','#lítið','#tilviljun'];
+
+const icelandicTemplates=[
+  '{adj} {obj} í {location} {emoji} {hashtag}',
+  'Að {verb} {adj} {obj} {emoji} {hashtag}',
+  'Í dag snýst allt um {adj} {obj} {emoji} {hashtag}',
+  'Njóta {adj} {obj} í {location} {emoji} {hashtag}'
+];
+
+function rndInt(min,max){return Math.floor(Math.random()*(max-min+1))+min;}
+function pick(arr){return arr[Math.floor(Math.random()*arr.length)];}
+function generateUsername(){const syl1=['mo','la','ri','ka','jo','be','xi','ze','ta','no','lu','sa','mi','co'];const syl2=['son','ly','ster','pilot','gram','nova','craft','byte','scape','loop','dash'];return pick(syl1)+pick(syl2)+rndInt(1,99);}
+function timeAgoRandom(){return pick(['just now','1m ago','5m ago','20m ago','1h ago','3h ago','12h ago','1d ago','3d ago','1w ago']);}
+async function fetchFastPublicDomainImage(){const seed=Math.random().toString(36).slice(2,9);return {src:`https://picsum.photos/seed/${seed}/900/900`,title:pick(locations)};}
+function generateAvatar(){const seed=Math.random().toString(36).slice(2,9);return `https://i.pravatar.cc/150?u=${seed}`;}
+
+function generateCaption(){
+  let template;
+  if(icelandicMode){
+    template=pick(icelandicTemplates);
+    template=template.replace('{adj}',pick(icelandicAdjectives))
+                     .replace('{verb}',pick(icelandicVerbs))
+                     .replace('{obj}',pick(icelandicObjects))
+                     .replace('{location}',pick(icelandicLocations))
+                     .replace('{emoji}',Math.random()<0.6?pick(emojis):'')
+                     .replace('{hashtag}',Math.random()<0.8?pick(icelandicHashtags):'');
+  } else {
+    const templateOptions=[`Feeling {adj} while {verb} the {obj} {emoji} {hashtag}`,`{adj} {obj} in {location} {emoji} {hashtag}`,`Just {verb} some {adj} {obj} {emoji} {hashtag}`,`Caught a {adj} {obj} in {location} {emoji} {hashtag}`,`Today is all about {adj} {obj} {emoji} {hashtag}`];
+    template=pick(templateOptions);
+    template=template.replace('{adj}',pick(adjectives))
+                     .replace('{verb}',pick(verbs))
+                     .replace('{obj}',pick(objects))
+                     .replace('{location}',pick(locations))
+                     .replace('{emoji}',Math.random()<0.6?pick(emojis):'')
+                     .replace('{hashtag}',Math.random()<0.8?pick(hashtags):'');
+  }
+  return template;
+}
+
+function makePostElement({imgSrc,title}){
+  const user=generateUsername();
+  const caption=generateCaption();
+  const likes=rndInt(12,9800);
+  const comments=rndInt(0,120);
+  const time=timeAgoRandom();
+  const avatarUrl=generateAvatar();
+  const div=document.createElement('article');
+  div.className='post';
+  div.innerHTML=`
+    <div class="meta">
+      <div class="avatar"><img src="${avatarUrl}" alt="${user}"></div>
+      <div class="user">
+        <div class="name">${user}</div>
+        <div class="sub small">${title} • ${time}</div>
+      </div>
+    </div>
+    <div class="imgwrap">
+      <img class="post-img" loading="lazy" src="${imgSrc}" alt="${title}">
+    </div>
+    <div class="actions">
+      <div class="likes">❤️ ${likes.toLocaleString()}</div>
+      <div class="small">💬 ${comments}</div>
+    </div>
+    <div class="caption"><span class="name">${user}</span> ${caption}</div>
+  `;
+  const img=div.querySelector('img.post-img');
+  img.onload=()=>img.classList.add('loaded');
+  if(img.complete) img.classList.add('loaded');
+  return div;
+}
+
+async function loadBatch(n=50){
+  if(loading) return;
+  loading=true;
+  loaderEl.style.display='flex';
+  const promises=Array.from({length:n},()=>fetchFastPublicDomainImage());
+  try{
+    const results=await Promise.all(promises);
+    for(const r of results){
+      const postEl=makePostElement({imgSrc:r.src,title:r.title});
+      feedEl.appendChild(postEl);
+    }
+  }finally{
+    loading=false;
+    loaderEl.style.display='none';
+  }
+}
+
+window.addEventListener('scroll',()=>{if((window.innerHeight+window.scrollY)>=(document.body.offsetHeight-800)) loadBatch(50);});
+
+darkToggle.addEventListener('click',()=>{
+  darkMode=!darkMode;
+  document.documentElement.setAttribute('data-theme',darkMode?'dark':'light');
+  localStorage.setItem('darkMode',darkMode);
+});
+
+icelandicToggle.addEventListener('click',()=>{
+  icelandicMode=!icelandicMode;
+  document.documentElement.setAttribute('data-icelandic',icelandicMode?'on':'off');
+  localStorage.setItem('icelandicMode',icelandicMode);
+
+  // Refresh all captions immediately
+  document.querySelectorAll('.post').forEach(post=>{
+    const user = post.querySelector('.name').textContent;
+    const newCaption = generateCaption();
+    post.querySelector('.caption').innerHTML = `<span class="name">${user}</span> ${newCaption}`;
+  });
+});
+
+loadBatch(50);
+</script>
+</body>
+</html>
