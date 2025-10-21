@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FriendNet TV Prop</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+body { background-color: #f0f2f5; }
+.cover-photo { background-size: cover; background-position: center; }
+.modal { position: fixed; inset: 0; background-color: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center; z-index: 50; overflow: hidden; }
+</style>
+</head>
+<body class="font-sans text-gray-800">
+
+<!-- Setup Page -->
+<section id="setupPage" class="max-w-6xl mx-auto p-6 space-y-6">
+  <h1 class="text-3xl font-bold mb-4">FriendNet Setup</h1>
+
+  <!-- Profile Settings -->
+  <div class="bg-white p-4 rounded shadow">
+    <h2 class="font-semibold mb-2">Profile Settings</h2>
+    <label class="block mb-2">Username:
+      <input type="text" id="setupUsername" placeholder="Alexandra Rivers" class="border rounded px-2 py-1 w-full">
+    </label>
+    <label class="block mb-2">Description:
+      <textarea id="setupDescription" placeholder="Visual artist • Traveler • Coffee lover ☕" class="border rounded px-2 py-1 w-full"></textarea>
+    </label>
+    <label class="block mb-2">Banner Photo:
+      <input type="file" id="setupBanner" accept="image/*">
+      <div id="bannerPreview" class="mt-2 w-full h-48 bg-gray-200 rounded bg-cover bg-center"></div>
+    </label>
+    <label class="block mb-2">Profile Photo:
+      <input type="file" id="setupProfilePhoto" accept="image/*">
+      <img id="profilePhotoPreview" class="mt-2 w-24 h-24 rounded-full object-cover" src="">
+    </label>
+  </div>
+
+  <!-- Albums -->
+  <div class="bg-white p-4 rounded shadow">
+    <h2 class="font-semibold mb-2">Albums</h2>
+    <div id="albumsContainer" class="space-y-4"></div>
+    <button id="addAlbum" class="px-3 py-1 bg-blue-600 text-white rounded mt-2">Add Album</button>
+  </div>
+
+  <!-- Personal Posts -->
+  <div class="bg-white p-4 rounded shadow">
+    <h2 class="font-semibold mb-2">Personal Feed Posts</h2>
+    <div id="personalPostsContainer" class="space-y-4"></div>
+    <button id="addPersonalPost" class="px-3 py-1 bg-blue-600 text-white rounded mt-2">Add Post</button>
+  </div>
+
+  <button id="launchApp" class="px-4 py-2 bg-green-600 text-white rounded text-lg mt-4">Launch App</button>
+</section>
+
+<!-- App Page -->
+<section id="appPage" class="hidden">
+
+  <header class="fixed top-0 left-0 w-full bg-white shadow z-20">
+    <div class="max-w-6xl mx-auto flex items-center justify-between p-3">
+      <div class="text-blue-600 text-2xl font-bold">FriendNet</div>
+    </div>
+    <div id="tabBar" class="flex bg-white border-t border-b shadow">
+      <button class="tabBtn flex-1 py-2 font-semibold" data-tab="profileFeed">My Feed</button>
+      <button class="tabBtn flex-1 py-2 font-semibold" data-tab="globalFeed">Global Feed</button>
+    </div>
+  </header>
+
+  <main class="pt-32 max-w-6xl mx-auto">
+    <!-- Profile Header -->
+    <section class="bg-white rounded-lg shadow overflow-hidden flex flex-col items-center mb-4">
+      <div id="profileBanner" class="h-48 cover-photo w-full"></div>
+      <img id="profilePhoto" class="w-24 h-24 rounded-full object-cover -mt-12 border-4 border-white">
+      <div class="mt-4 text-center p-4">
+        <h1 id="profileUsername" class="text-2xl font-bold"></h1>
+        <p id="profileDescription" class="text-gray-600"></p>
+      </div>
+    </section>
+
+    <!-- Albums -->
+    <section class="bg-white rounded-lg shadow p-6 mb-4">
+      <h2 class="text-lg font-semibold mb-3">Photo Albums</h2>
+      <div id="albums" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3"></div>
+    </section>
+
+    <!-- Feeds -->
+    <section id="profileFeed" class="space-y-4 mb-20"></section>
+    <section id="globalFeed" class="space-y-4 mb-20 hidden"></section>
+  </main>
+
+  <!-- Modal -->
+  <div id="modal" class="modal">
+    <div class="bg-white rounded-lg max-w-3xl w-full mx-4 p-4 relative">
+      <button id="closeModal" class="absolute top-2 right-2 text-gray-500 text-2xl leading-none">&times;</button>
+      <div id="modalContent" class="overflow-hidden max-h-[80vh] relative flex items-center justify-center"></div>
+      <div class="flex justify-between mt-2">
+        <button id="prevPhoto" class="px-3 py-1 bg-gray-200 rounded">Prev</button>
+        <button id="nextPhoto" class="px-3 py-1 bg-gray-200 rounded">Next</button>
+      </div>
+    </div>
+  </div>
+
+</section>
+
+<script>
+// ---------------- CONFIG ----------------
+let profileFeedData=[], globalFeedData=[], profileFeedIndex=0, globalFeedIndex=0;
+let currentAlbum=null, currentPhotoIndex=0;
+
+// ---------------- UTILITY ----------------
+function readFileAsDataURL(file){return new Promise(resolve=>{const reader=new FileReader();reader.onload=e=>resolve(e.target.result);reader.readAsDataURL(file);});}
+function createDefaultAlbums(count){return Array.from({length:count},(_,i)=>({title:`Album ${i+1}`,images:[`https://picsum.photos/seed/album${i}a/200/200`,`https://picsum.photos/seed/album${i}b/200/200`,`https://picsum.photos/seed/album${i}c/200/200`]}));}
+function createDefaultUsers(count){ 
+  const names=["Alex Rivers","Jordan Smith","Taylor Johnson","Casey Lee","Morgan Brown","Jamie Davis","Riley Martinez","Dakota Clark","Avery Lewis","Skyler Walker"];
+  return Array.from({length:count},(_,i)=>({name:names[i%names.length],profilePic:`https://picsum.photos/seed/user${i}/200/200`}));
+}
+function generateDefaultPosts(count,userCount=1,isGlobal=false){
+  const captions=["Finally learned to make banana bread today!","Beautiful sunset 🌅","Reading a book again","Coffee first ☕","Exploring new places","Just finished a 5k run","Life is better with friends","Trying a new recipe","Feeling grateful","Adventures await","Smile more","Nature therapy","Movie marathon time","Learning something new","View never gets old"];
+  const images=Array.from({length:50},(_,i)=>`https://picsum.photos/seed/${isGlobal?'g':'p'}${i}/400/400`);
+  const posts=[];
+  for(let i=0;i<count;i++){
+    const isText=(i%2===1);
+    if(isGlobal) posts.push({caption:isText?captions[i%15]:"",images:isText?[]:[images[i%50]],userIndex:i%userCount});
+    else posts.push({caption:isText?captions[i%15]:"",images:isText?[]:[images[i%50]]});
+  }
+  return posts;
+}
+
+// ---------------- CREATE POST ELEMENTS ----------------
+function createPostElement(post){
+  const div=document.createElement('div'); div.className='bg-white rounded-lg shadow p-4';
+  const imgs=post.images||[];
+  const likes=Math.floor(Math.random()*100); const comments=Math.floor(Math.random()*50);
+  div.innerHTML=`<p class="mb-2">${post.caption}</p>`;
+  if(imgs.length>0){
+    if(imgs.length===1) div.innerHTML+=`<img src="${imgs[0]}" class="w-full rounded-lg cursor-pointer" onclick="openAlbumModal('Post Images', ['${imgs[0]}'])">`;
+    else{ const grid=document.createElement('div'); grid.className='grid grid-cols-2 gap-1'; imgs.forEach(imgSrc=>{ const img=document.createElement('img'); img.src=imgSrc; img.className='w-full rounded-lg cursor-pointer'; img.onclick=()=>openAlbumModal('Post Images', imgs); grid.appendChild(img); }); div.appendChild(grid); }
+  }
+  div.innerHTML+=`<div class="mt-2 text-sm text-gray-500">👍 ${likes} • 💬 ${comments}</div>`;
+  return div;
+}
+
+function createGlobalPostElement(post,users){
+  const user=users[post.userIndex]||{name:'User',profilePic:'https://picsum.photos/id/201/200/200'};
+  const div=document.createElement('div'); div.className='bg-white rounded-lg shadow p-4';
+  const likes=Math.floor(Math.random()*100); const comments=Math.floor(Math.random()*50);
+  div.innerHTML=`<div class="flex items-center gap-2 mb-2"><img src="${user.profilePic}" class="w-8 h-8 rounded-full"><span class="font-semibold">${user.name}</span></div><p class="mb-2">${post.caption}</p>`;
+  const imgs=post.images||[];
+  if(imgs.length>0){
+    if(imgs.length===1) div.innerHTML+=`<img src="${imgs[0]}" class="w-full rounded-lg cursor-pointer" onclick="openAlbumModal('Post Images', ['${imgs[0]}'])">`;
+    else{ const grid=document.createElement('div'); grid.className='grid grid-cols-2 gap-1'; imgs.forEach(imgSrc=>{ const img=document.createElement('img'); img.src=imgSrc; img.className='w-full rounded-lg cursor-pointer'; img.onclick=()=>openAlbumModal('Post Images', imgs); grid.appendChild(img); }); div.appendChild(grid); }
+  }
+  div.innerHTML+=`<div class="mt-2 text-sm text-gray-500">👍 ${likes} • 💬 ${comments}</div>`;
+  return div;
+}
+
+// ---------------- LOAD POSTS ----------------
+function loadMorePosts(feedId){
+  const feed=document.getElementById(feedId);
+  const batchSize=10;
+  if(feedId==='profileFeed'){
+    const start=profileFeedIndex; const end=Math.min(start+batchSize,profileFeedData.length);
+    for(let i=start;i<end;i++) feed.appendChild(createPostElement(profileFeedData[i]));
+    profileFeedIndex=end;
+  } else if(feedId==='globalFeed'){
+    const start=globalFeedIndex; const end=Math.min(start+batchSize,globalFeedData.posts.length);
+    for(let i=start;i<end;i++) feed.appendChild(createGlobalPostElement(globalFeedData.posts[i],globalFeedData.users));
+    globalFeedIndex=end;
+  }
+}
+
+// ---------------- MODAL ----------------
+function openAlbumModal(title,images){ currentAlbum=images; currentPhotoIndex=0; document.getElementById('modal').style.display='flex'; updateModalImage(); }
+function updateModalImage(){ document.getElementById('modalContent').innerHTML=`<img src="${currentAlbum[currentPhotoIndex]}" class="rounded-lg w-full object-cover mb-2">`; }
+document.getElementById('prevPhoto').addEventListener('click',()=>{ if(currentAlbum){ currentPhotoIndex=(currentPhotoIndex-1+currentAlbum.length)%currentAlbum.length; updateModalImage(); }});
+document.getElementById('nextPhoto').addEventListener('click',()=>{ if(currentAlbum){ currentPhotoIndex=(currentPhotoIndex+1)%currentAlbum.length; updateModalImage(); }});
+document.getElementById('closeModal').addEventListener('click',()=>{ document.getElementById('modal').style.display='none'; });
+
+// ---------------- SETUP PREVIEWS ----------------
+document.getElementById('setupBanner').addEventListener('change',e=>{
+  if(e.target.files[0]) readFileAsDataURL(e.target.files[0]).then(url=>document.getElementById('bannerPreview').style.backgroundImage=`url(${url})`);
+});
+document.getElementById('setupProfilePhoto').addEventListener('change',e=>{
+  if(e.target.files[0]) readFileAsDataURL(e.target.files[0]).then(url=>document.getElementById('profilePhotoPreview').src=url);
+});
+
+// ---------------- ADD ALBUM ----------------
+document.getElementById('addAlbum').addEventListener('click',()=>{
+  const container=document.getElementById('albumsContainer');
+  const div=document.createElement('div'); div.className='border p-2 rounded bg-gray-50';
+  div.innerHTML=`<input type="text" placeholder="Album Title" class="border p-1 w-full mb-1"><input type="file" multiple class="albumFiles"> <div class="previewGrid grid grid-cols-3 gap-1 mt-1"></div>`;
+  const fileInput=div.querySelector('.albumFiles'); const previewGrid=div.querySelector('.previewGrid');
+  fileInput.addEventListener('change',e=>{ previewGrid.innerHTML=''; Array.from(e.target.files).forEach(file=>{ readFileAsDataURL(file).then(url=>{ const img=document.createElement('img'); img.src=url; img.className='w-full h-16 object-cover rounded'; previewGrid.appendChild(img); }); }); });
+  container.appendChild(div);
+});
+
+// ---------------- ADD PERSONAL POST ----------------
+document.getElementById('addPersonalPost').addEventListener('click',()=>{
+  const container=document.getElementById('personalPostsContainer');
+  const div=document.createElement('div'); div.className='border p-2 rounded bg-gray-50';
+  div.innerHTML=`<textarea placeholder="Caption" class="w-full border p-1 mb-1"></textarea><input type="file" multiple class="postFiles"><div class="previewGrid grid grid-cols-3 gap-1 mt-1"></div>`;
+  const fileInput=div.querySelector('.postFiles'); const previewGrid=div.querySelector('.previewGrid');
+  fileInput.addEventListener('change',e=>{ previewGrid.innerHTML=''; Array.from(e.target.files).forEach(file=>{ readFileAsDataURL(file).then(url=>{ const img=document.createElement('img'); img.src=url; img.className='w-full h-16 object-cover rounded'; previewGrid.appendChild(img); }); }); });
+  container.appendChild(div);
+});
+
+// ---------------- LAUNCH APP ----------------
+document.getElementById('launchApp').addEventListener('click',async()=>{
+  try{
+    // PROFILE
+    document.getElementById('profileUsername').textContent=document.getElementById('setupUsername').value||"Alexandra Rivers";
+    document.getElementById('profileDescription').textContent=document.getElementById('setupDescription').value||"Visual artist • Traveler • Coffee lover ☕";
+
+    const bannerInput=document.getElementById('setupBanner');
+    if(bannerInput.files[0]){ const url=await readFileAsDataURL(bannerInput.files[0]); document.getElementById('profileBanner').style.backgroundImage=`url(${url})`; }
+    else document.getElementById('profileBanner').style.backgroundImage=`url('https://picsum.photos/id/1015/800/300')`;
+
+    const photoInput=document.getElementById('setupProfilePhoto');
+    if(photoInput.files[0]){ const url=await readFileAsDataURL(photoInput.files[0]); document.getElementById('profilePhoto').src=url; }
+    else document.getElementById('profilePhoto').src='https://picsum.photos/id/1011/200/200';
+
+    // HIDE SETUP
+    document.getElementById('setupPage').classList.add('hidden');
+    document.getElementById('appPage').classList.remove('hidden');
+
+    // ALBUMS
+    const albumsContainer=document.getElementById('albums'); albumsContainer.innerHTML='';
+    const albumSetupDivs=document.querySelectorAll('#albumsContainer > div'); let albums=[];
+    for(const div of albumSetupDivs){
+      const title=div.querySelector('input[type=text]').value||"Untitled Album";
+      const files=div.querySelector('input[type=file]').files;
+      const images=[];
+      for(const file of files) images.push(await readFileAsDataURL(file));
+      albums.push({title,images});
+    }
+    if(albums.length===0) albums=createDefaultAlbums(4);
+
+    albums.forEach(album=>{
+      const div=document.createElement('div'); div.className='relative cursor-pointer rounded-lg overflow-hidden h-32';
+      const img=document.createElement('img'); img.src=album.images[0]||'https://picsum.photos/200/200'; img.className='w-full h-full object-cover'; div.appendChild(img);
+      const overlay=document.createElement('div'); overlay.className='absolute bottom-0 left-0 w-full bg-black bg-opacity-50 text-white text-center py-1 font-semibold'; overlay.textContent=album.title; div.appendChild(overlay);
+      div.addEventListener('click',()=>openAlbumModal(album.title,album.images)); albumsContainer.appendChild(div);
+    });
+
+    // PROFILE FEED
+    profileFeedData=[]; const postSetupDivs=document.querySelectorAll('#personalPostsContainer > div');
+    for(const div of postSetupDivs){
+      const caption=div.querySelector('textarea')?.value||"";
+      const files=div.querySelector('input[type=file]')?.files||[];
+      const images=[]; for(const file of files) images.push(await readFileAsDataURL(file));
+      profileFeedData.push({caption,images});
+    }
+    if(profileFeedData.length===0) profileFeedData=generateDefaultPosts(50);
+    profileFeedIndex=0; document.getElementById('profileFeed').innerHTML=''; loadMorePosts('profileFeed');
+
+    // GLOBAL FEED
+    globalFeedData={users:createDefaultUsers(50),posts:generateDefaultPosts(50,50,true)};
+    globalFeedIndex=0; document.getElementById('globalFeed').innerHTML=''; loadMorePosts('globalFeed');
+
+    // TABS
+    document.querySelectorAll('.tabBtn').forEach(btn=>{
+      btn.addEventListener('click',()=>{document.getElementById('profileFeed').classList.add('hidden');document.getElementById('globalFeed').classList.add('hidden');document.getElementById(btn.dataset.tab).classList.remove('hidden');});
+    });
+
+    // INFINITE SCROLL
+    window.addEventListener('scroll',()=>{
+      const feedEl=!document.getElementById('profileFeed').classList.contains('hidden')?'profileFeed':'globalFeed';
+      const el=document.getElementById(feedEl);
+      if(el && window.innerHeight+window.scrollY>=el.offsetTop+el.offsetHeight-300) loadMorePosts(feedEl);
+    });
+
+  }catch(err){ console.error(err); alert("Failed to launch app. Check console."); }
+});
+</script>
+</body>
+</html>
