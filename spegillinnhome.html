@@ -12,7 +12,6 @@
       background-color: #000;
       overflow: hidden;
     }
-
     #container {
       width: 100%;
       height: 100%;
@@ -20,28 +19,24 @@
       scroll-behavior: smooth;
       position: relative;
     }
-
     img {
       display: block;
       width: 100%;
       height: auto;
     }
-
     .hidden {
       display: none;
     }
-
     .clickable-area {
       position: absolute;
       cursor: pointer;
-      background: rgba(255, 0, 0, 0); /* make visible for debugging if needed */
+      background: rgba(255, 0, 0, 0); /* set to 0.2 opacity to debug clickable area */
     }
-
-    /* Responsive clickable area — based on 1920x3383 original image */
+    /* responsive clickable zone based on 1920×3383 */
     #article-link {
       left: calc(82 / 1920 * 100%);
       top: calc(425 / 3383 * 100%);
-      width: calc(1211 / 1920 * 100%);
+      width:  calc(1211 / 1920 * 100%);
       height: calc(669 / 3383 * 100%);
     }
   </style>
@@ -50,17 +45,11 @@
   <div id="container">
     <!-- Homepage -->
     <div id="homepage-wrapper" style="position: relative;">
-      <img id="homepage" 
-           src="https://github.com/nicolaskunysz/screenMockups/homepage.png" 
-           alt="Homepage" />
+      <img id="homepage" src="./homepage.png" alt="Homepage" />
       <div class="clickable-area" id="article-link"></div>
     </div>
-
     <!-- Article -->
-    <img id="article" 
-         src="https://github.com/nicolaskunysz/screenMockups/article.png" 
-         alt="Article" 
-         class="hidden" />
+    <img id="article" src="./article.png" alt="Article" class="hidden" />
   </div>
 
   <script>
@@ -69,14 +58,12 @@
     const article = document.getElementById('article');
     const container = document.getElementById('container');
 
-    // Click on homepage clickable area → show article
     articleLink.addEventListener('click', () => {
       homepageWrapper.classList.add('hidden');
       article.classList.remove('hidden');
       container.scrollTo(0, 0);
     });
 
-    // Click anywhere on article → go back to homepage
     article.addEventListener('click', () => {
       article.classList.add('hidden');
       homepageWrapper.classList.remove('hidden');
