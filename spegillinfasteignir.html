@@ -10,6 +10,7 @@
         padding: 0;
         height: 100%;
         font-family: Arial, sans-serif;
+        overflow-x: hidden;
     }
 
     /* Background container */
@@ -18,22 +19,21 @@
         width: 100%;
         min-height: 100vh;
         background-image: url("REALESTATE/background.png");
-        background-size: cover;       /* scale to cover window */
+        background-size: cover;       /* scale to fill window */
         background-position: center;
         background-repeat: no-repeat;
-        overflow: hidden;
     }
 
-    /* Hotspots container */
+    /* Invisible hotspots */
     .hotspot {
         position: absolute;
         cursor: pointer;
-        background: rgba(255,255,255,0); /* invisible */
+        background: rgba(255,255,255,0); /* fully invisible */
     }
 
     /* Slideshow overlay */
     .slideshow-overlay {
-        display: none;
+        display: none;                /* hidden by default */
         position: fixed;
         inset: 0;
         background: rgba(0,0,0,0.85);
@@ -41,17 +41,23 @@
         display: flex;
         justify-content: center;
         align-items: center;
+        overflow: auto;
         padding: 20px;
         box-sizing: border-box;
     }
 
+    /* Slideshow image */
     .slideshow-overlay img {
-        max-width: 95%;
-        max-height: 90%;
+        display: block;
+        width: auto;
+        height: auto;
+        max-width: 90vw;
+        max-height: 90vh;
         border-radius: 8px;
         box-shadow: 0 0 30px rgba(0,0,0,0.7);
     }
 
+    /* Navigation buttons */
     .nav-btn {
         position: absolute;
         top: 50%;
@@ -64,6 +70,7 @@
     .nav-left { left: 2vw; }
     .nav-right { right: 2vw; }
 
+    /* Close button */
     .close-btn {
         position: absolute;
         top: 2vh;
@@ -73,29 +80,29 @@
         cursor: pointer;
     }
 
+    /* Slide counter */
     .counter {
         position: absolute;
         bottom: 2vh;
         color: white;
         font-size: 2vw;
     }
-
 </style>
 </head>
 <body>
 
 <div class="canvas" id="canvas">
 
-    <!-- Hotspots (using relative coordinates for scaling) -->
-    <!-- These coordinates are percentages relative to original 1920x2621 -->
-    <div class="hotspot" data-index="1" style="left:5%; top:10%; width:44%; height:22%;"></div>
-    <div class="hotspot" data-index="2" style="left:50%; top:10%; width:21%; height:11%;"></div>
-    <div class="hotspot" data-index="3" style="left:50%; top:21%; width:21%; height:11%;"></div>
-    <div class="hotspot" data-index="4" style="left:74%; top:10%; width:21%; height:11%;"></div>
-    <div class="hotspot" data-index="5" style="left:74%; top:21%; width:74%; height:10%;"></div>
+    <!-- Hotspots (percentages relative to 1920x2621) -->
+    <div class="hotspot" data-index="1" style="left:5%; top:9.95%; width:44.17%; height:22.41%;"></div>
+    <div class="hotspot" data-index="2" style="left:50.7%; top:9.95%; width:21.35%; height:10.76%;"></div>
+    <div class="hotspot" data-index="3" style="left:50.7%; top:21.62%; width:21.35%; height:10.76%;"></div>
+    <div class="hotspot" data-index="4" style="left:73.54%; top:9.95%; width:21.35%; height:10.76%;"></div>
+    <div class="hotspot" data-index="5" style="left:73.54%; top:21.62%; width:73.54%; height:9.95%;"></div>
 
 </div>
 
+<!-- Slideshow overlay -->
 <div class="slideshow-overlay" id="overlay">
     <span class="close-btn" id="closeBtn">×</span>
     <span class="nav-btn nav-left" id="prevBtn">‹</span>
@@ -131,6 +138,7 @@
         document.body.style.overflow = "auto";
     }
 
+    // Hotspot click
     document.querySelectorAll(".hotspot").forEach(h => {
         h.addEventListener("click", () => {
             const index = parseInt(h.dataset.index, 10);
@@ -138,10 +146,14 @@
         });
     });
 
+    // Navigation buttons
     document.getElementById("prevBtn").onclick = () => showSlide(currentIndex - 1);
     document.getElementById("nextBtn").onclick = () => showSlide(currentIndex + 1);
+
+    // Close button
     document.getElementById("closeBtn").onclick = closeSlideshow;
 
+    // Keyboard navigation
     window.addEventListener("keydown", e => {
         if (overlay.style.display !== "flex") return;
         if (e.key === "ArrowLeft") showSlide(currentIndex - 1);
