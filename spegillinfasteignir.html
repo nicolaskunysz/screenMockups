@@ -1,44 +1,42 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
+<meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Responsive Real Estate Page</title>
 <style>
     html, body {
         margin: 0;
         padding: 0;
-        height: 100%;
         font-family: Arial, sans-serif;
+        height: 100%;
         overflow-x: hidden;
     }
 
-    /* Background container */
+    /* Scrollable canvas with responsive background */
     .canvas {
         position: relative;
         width: 100%;
-        min-height: 100vh;
         background-image: url("REALESTATE/background.png");
-        background-size: cover;       /* scale to fill window */
-        background-position: center;
+        background-size: 100% auto; /* scale width to container, height auto */
         background-repeat: no-repeat;
+        background-position: top center;
     }
 
-    /* Invisible hotspots */
+    /* Hotspots scaled with the background image */
     .hotspot {
         position: absolute;
         cursor: pointer;
-        background: rgba(255,255,255,0); /* fully invisible */
+        background: rgba(255,255,255,0); /* invisible */
     }
 
     /* Slideshow overlay */
     .slideshow-overlay {
-        display: none;                /* hidden by default */
+        display: none;  /* hidden by default */
         position: fixed;
         inset: 0;
         background: rgba(0,0,0,0.85);
         z-index: 9999;
-        display: flex;
         justify-content: center;
         align-items: center;
         overflow: auto;
@@ -46,7 +44,6 @@
         box-sizing: border-box;
     }
 
-    /* Slideshow image */
     .slideshow-overlay img {
         display: block;
         width: auto;
@@ -57,7 +54,6 @@
         box-shadow: 0 0 30px rgba(0,0,0,0.7);
     }
 
-    /* Navigation buttons */
     .nav-btn {
         position: absolute;
         top: 50%;
@@ -70,7 +66,6 @@
     .nav-left { left: 2vw; }
     .nav-right { right: 2vw; }
 
-    /* Close button */
     .close-btn {
         position: absolute;
         top: 2vh;
@@ -80,7 +75,6 @@
         cursor: pointer;
     }
 
-    /* Slide counter */
     .counter {
         position: absolute;
         bottom: 2vh;
@@ -93,7 +87,7 @@
 
 <div class="canvas" id="canvas">
 
-    <!-- Hotspots (percentages relative to 1920x2621) -->
+    <!-- Hotspots: use percentage positions relative to original 1920x2621 -->
     <div class="hotspot" data-index="1" style="left:5%; top:9.95%; width:44.17%; height:22.41%;"></div>
     <div class="hotspot" data-index="2" style="left:50.7%; top:9.95%; width:21.35%; height:10.76%;"></div>
     <div class="hotspot" data-index="3" style="left:50.7%; top:21.62%; width:21.35%; height:10.76%;"></div>
@@ -130,30 +124,22 @@
     function openSlideshow(start) {
         showSlide(start);
         overlay.style.display = "flex";
-        document.body.style.overflow = "hidden";
+        document.body.style.overflow = "hidden";  // prevent background scroll
     }
 
     function closeSlideshow() {
         overlay.style.display = "none";
-        document.body.style.overflow = "auto";
+        document.body.style.overflow = "auto";  // restore scrolling
     }
 
-    // Hotspot click
     document.querySelectorAll(".hotspot").forEach(h => {
-        h.addEventListener("click", () => {
-            const index = parseInt(h.dataset.index, 10);
-            openSlideshow(index);
-        });
+        h.addEventListener("click", () => openSlideshow(parseInt(h.dataset.index)));
     });
 
-    // Navigation buttons
     document.getElementById("prevBtn").onclick = () => showSlide(currentIndex - 1);
     document.getElementById("nextBtn").onclick = () => showSlide(currentIndex + 1);
-
-    // Close button
     document.getElementById("closeBtn").onclick = closeSlideshow;
 
-    // Keyboard navigation
     window.addEventListener("keydown", e => {
         if (overlay.style.display !== "flex") return;
         if (e.key === "ArrowLeft") showSlide(currentIndex - 1);
