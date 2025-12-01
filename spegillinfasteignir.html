@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Real Estate Page</title>
+<title>Spegillin - Fasteignasala</title>
 
 <style>
     html,body {
@@ -26,7 +26,7 @@
         position:relative;
         width:1920px;
         height:2621px;
-        background-image:url("background.png");
+        background-image:url("REALESTATE/background.png");
         background-size:1920px 2621px;
         background-repeat:no-repeat;
         background-position:0 0;
@@ -98,30 +98,11 @@
     <div class="canvas">
 
         <!-- Invisible clickable hotspots -->
-        <!-- Hotspot 1 → image1.jpg -->
-        <div class="hotspot"
-            style="left:96px; top:261px; width:848px; height:587px;"
-            data-index="1"></div>
-
-        <!-- Hotspot 2 -->
-        <div class="hotspot"
-            style="left:973px; top:261px; width:410px; height:282px;"
-            data-index="2"></div>
-
-        <!-- Hotspot 3 -->
-        <div class="hotspot"
-            style="left:973px; top:567px; width:410px; height:282px;"
-            data-index="3"></div>
-
-        <!-- Hotspot 4 -->
-        <div class="hotspot"
-            style="left:1412px; top:261px; width:410px; height:282px;"
-            data-index="4"></div>
-
-        <!-- Hotspot 5 -->
-        <div class="hotspot"
-            style="left:1412px; top:567px; width:1412px; height:261px;"
-            data-index="5"></div>
+        <div class="hotspot" style="left:96px; top:261px; width:848px; height:587px;" data-index="1"></div>
+        <div class="hotspot" style="left:973px; top:261px; width:410px; height:282px;" data-index="2"></div>
+        <div class="hotspot" style="left:973px; top:567px; width:410px; height:282px;" data-index="3"></div>
+        <div class="hotspot" style="left:1412px; top:261px; width:410px; height:282px;" data-index="4"></div>
+        <div class="hotspot" style="left:1412px; top:567px; width:1412px; height:261px;" data-index="5"></div>
 
     </div>
 </div>
@@ -147,7 +128,7 @@
         if (i < 1) i = TOTAL_SLIDES;
         if (i > TOTAL_SLIDES) i = TOTAL_SLIDES;
         currentIndex = i;
-        slideImage.src = "image" + i + ".jpg";
+        slideImage.src = "REALESTATE/image" + i + ".jpg"; // updated path
         counter.textContent = `${i} / ${TOTAL_SLIDES}`;
     }
 
